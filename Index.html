@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Older Under</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d10; --surface: #16161b; --surface2: #1e1e26;
+  --border: #2a2a35; --border2: #38384a;
+  --text: #f0f0f4; --text2: #9090a8; --text3: #5a5a72;
+  --accent: #e8c547; --accent2: #c9a830;
+  --info: #4a9eff; --info-bg: #0d2240; --info-border: #1a3a60;
+  --success: #3dd68c; --success-bg: #0a2518; --success-border: #1a4530;
+  --danger: #ff5c5c; --danger-bg: #2a0e0e; --danger-border: #4a1a1a;
+  --warn: #f5a623; --warn-bg: #2a1c08; --warn-border: #4a3010;
+}
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+.header { background:var(--surface); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:2px; color:var(--accent); line-height:1; }
+.tagline { font-size:12px; color:var(--text3); font-weight:300; margin-top:1px; }
+.main { max-width:680px; margin:0 auto; padding:24px 16px 60px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:14px; }
+.tabs { display:flex; gap:6px; margin-bottom:18px; }
+.tab { padding:7px 18px; font-size:13px; font-family:'DM Sans',sans-serif; font-weight:500; border:1px solid var(--border); border-radius:999px; background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+.tab.active { background:var(--accent); color:#000; border-color:var(--accent); }
+.diff-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.diff-label { font-size:13px; color:var(--text2); min-width:72px; }
+.diff-btn { padding:6px 16px; font-size:13px; font-family:'DM Sans',sans-serif; border:1px solid var(--border2); border-radius:999px; background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+.diff-btn.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+.diff-hint { font-size:12px; color:var(--text3); margin-bottom:14px; }
+.btn-primary { width:100%; padding:13px; font-size:15px; font-family:'DM Sans',sans-serif; font-weight:600; background:var(--accent); color:#000; border:none; border-radius:12px; cursor:pointer; letter-spacing:.5px; transition:all .15s; }
+.btn-primary:hover { background:var(--accent2); }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+.btn-secondary { padding:10px 26px; font-size:14px; font-family:'DM Sans',sans-serif; font-weight:500; background:var(--surface2); color:var(--text); border:1px solid var(--border2); border-radius:12px; cursor:pointer; transition:all .15s; }
+.btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+.btn-sm { padding:5px 12px; font-size:12px; font-family:'DM Sans',sans-serif; background:var(--surface2); color:var(--text2); border:1px solid var(--border); border-radius:8px; cursor:pointer; }
+.api-section { background:var(--warn-bg); border:1px solid var(--warn-border); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+.api-section.ok { background:var(--success-bg); border-color:var(--success-border); }
+.api-label { font-size:13px; color:var(--warn); margin-bottom:8px; line-height:1.5; }
+.api-label.ok { color:var(--success); }
+.api-row { display:flex; gap:8px; }
+.api-row input { flex:1; padding:8px 12px; font-size:13px; font-family:'DM Sans',sans-serif; background:var(--surface); color:var(--text); border:1px solid var(--border2); border-radius:8px; outline:none; }
+.api-row input:focus { border-color:var(--accent); }
+.api-row button { padding:8px 14px; font-size:13px; font-family:'DM Sans',sans-serif; background:var(--accent); color:#000; border:none; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap; }
+.game-header { text-align:center; padding:6px 0 14px; }
+.game-title { font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:3px; color:var(--accent); line-height:1; margin-bottom:5px; }
+.game-subtitle { font-size:13px; color:var(--text2); font-weight:300; }
+.strikes-row { display:flex; gap:10px; justify-content:center; margin-bottom:10px; }
+.strike-dot { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--danger); transition:all .2s; }
+.strike-dot.used { background:var(--danger-bg); border-color:var(--danger); }
+.range-label { text-align:center; font-size:13px; color:var(--text2); margin-bottom:5px; }
+.range-label b { color:var(--text); font-weight:600; }
+.range-rule { text-align:center; font-size:12px; padding:6px 12px; border-radius:8px; margin-bottom:8px; display:none; background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-border); }
+.range-rule.active { display:block; }
+.tl-wrap { margin:14px 0 8px; }
+.tl-ends { display:flex; justify-content:space-between; font-size:11px; color:var(--text3); margin-bottom:5px; }
+.tl-track { position:relative; height:6px; background:var(--surface2); border-radius:3px; border:1px solid var(--border); }
+.tl-fill { position:absolute; height:100%; background:var(--info); border-radius:3px; top:0; transition:left .3s,width .3s; }
+.tl-pins { position:relative; height:46px; }
+.tl-pin { position:absolute; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
+.tl-pin-dot { width:10px; height:10px; border-radius:50%; border:1.5px solid; flex-shrink:0; }
+.tl-pin-label { font-size:10px; white-space:nowrap; margin-top:2px; max-width:72px; overflow:hidden; text-overflow:ellipsis; text-align:center; line-height:1.3; }
+.tl-pin.closer .tl-pin-dot { background:var(--info); border-color:var(--info); }
+.tl-pin.closer .tl-pin-label { color:var(--info); }
+.tl-pin.strike .tl-pin-dot { background:var(--danger); border-color:var(--danger); }
+.tl-pin.strike .tl-pin-label { color:var(--danger); }
+.tl-pin.correct .tl-pin-dot { background:var(--success); border-color:var(--success); width:13px; height:13px; border-width:2px; }
+.tl-pin.correct .tl-pin-label { color:var(--success); font-weight:600; }
+.input-row { display:flex; gap:10px; margin-top:10px; }
+.input-row input { flex:1; padding:12px 16px; font-size:14px; font-family:'DM Sans',sans-serif; background:var(--surface2); color:var(--text); border:1px solid var(--border2); border-radius:12px; outline:none; transition:border-color .15s; }
+.input-row input:focus { border-color:var(--accent); }
+.input-row input::placeholder { color:var(--text3); }
+.guess-btn { padding:12px 20px; font-size:14px; font-family:'DM Sans',sans-serif; font-weight:600; background:var(--accent); color:#000; border:none; border-radius:12px; cursor:pointer; white-space:nowrap; transition:all .15s; }
+.guess-btn:hover { background:var(--accent2); }
+.guess-btn:disabled { opacity:.5; cursor:not-allowed; }
+.log { margin-top:12px; display:flex; flex-direction:column; gap:6px; max-height:340px; overflow-y:auto; }
+.log-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); font-size:13px; flex-shrink:0; }
+.log-item.correct { background:var(--success-bg); border-color:var(--success-border); }
+.log-item.strike { background:var(--danger-bg); border-color:var(--danger-border); }
+.log-item.closer { background:var(--info-bg); border-color:var(--info-border); }
+.log-item.neutral { background:var(--surface2); }
+.log-body { flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.log-name { font-weight:600; color:var(--text); }
+.log-age { font-size:12px; color:var(--text2); margin-left:6px; }
+.log-dir { font-size:12px; color:var(--text3); margin-left:4px; }
+.log-verdict { font-size:12px; font-weight:500; flex-shrink:0; }
+.v-ok { color:var(--info); } .v-bad { color:var(--danger); } .v-win { color:var(--success); } .v-neutral { color:var(--text3); }
+.loading { text-align:center; padding:32px; color:var(--text3); }
+.spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; vertical-align:-4px; margin-right:8px; }
+.spinner-sm { display:inline-block; width:12px; height:12px; border:2px solid var(--border2); border-top-color:var(--info); border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.result-hero { text-align:center; padding:8px 0 14px; }
+.result-title { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:2px; margin:10px 0 5px; }
+.result-title.win { color:var(--success); } .result-title.lose { color:var(--danger); }
+.result-detail { font-size:14px; color:var(--text2); margin-bottom:6px; }
+.result-score { font-size:13px; color:var(--text3); }
+.result-score span { color:var(--accent); font-weight:600; font-size:20px; }
+.gallery-label { font-size:11px; color:var(--text3); text-align:center; margin:14px 0 10px; text-transform:uppercase; letter-spacing:1px; }
+.gallery { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:6px; }
+.gallery-card { display:flex; flex-direction:column; align-items:center; gap:4px; width:68px; }
+.gallery-card-name { font-size:10px; color:var(--text3); text-align:center; max-width:68px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gallery-card-age { font-size:12px; font-weight:600; }
+.lb-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.lb-row:last-child { border-bottom:none; }
+.lb-rank { font-size:12px; color:var(--text3); min-width:20px; }
+.lb-celeb { flex:1; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lb-meta { font-size:12px; color:var(--text2); white-space:nowrap; }
+.lb-badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:600; }
+.lb-badge.win { background:var(--success-bg); color:var(--success); border:1px solid var(--success-border); }
+.lb-badge.lose { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger-border); }
+.lb-score { font-weight:600; color:var(--accent); min-width:26px; text-align:right; }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.stat-box { background:var(--surface2); border-radius:12px; padding:14px; text-align:center; border:1px solid var(--border); }
+.stat-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.stat-value { font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--accent); letter-spacing:1px; line-height:1; }
+.mode-badge { display:inline-block; font-size:11px; padding:3px 10px; border-radius:999px; font-weight:500; }
+.mode-badge.ai { background:var(--success-bg); color:var(--success); border:1px solid var(--success-border); }
+.mode-badge.classic { background:var(--surface2); color:var(--text3); border:1px solid var(--border); }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">Older Under</div>
+    <div class="tagline">guess the famous person by age</div>
+  </div>
+  <span id="mode-indicator"></span>
+</div>
+
+<div class="main">
+
+  <div class="api-section" id="api-section">
+    <div class="api-label" id="api-label">⚡ Add your <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--accent)">Anthropic API key</a> to recognize <em>any</em> famous person you type and get web-verified ages. Without a key the game uses the built-in list only.</div>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <button onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('game')">▶&nbsp; Game</button>
+    <button class="tab" onclick="switchTab('lb')">↑&nbsp; Leaderboard</button>
+  </div>
+
+  <div id="tab-game">
+    <div id="panel-setup" class="card">
+      <div class="diff-row">
+        <span class="diff-label">Difficulty</span>
+        <button class="diff-btn active" data-diff="easy" onclick="setDiff('easy')">Easy</button>
+        <button class="diff-btn" data-diff="medium" onclick="setDiff('medium')">Medium</button>
+        <button class="diff-btn" data-diff="hard" onclick="setDiff('hard')">Hard</button>
+      </div>
+      <div class="diff-hint" id="diff-hint">Easy: household names across all categories.</div>
+      <button class="btn-primary" id="start-btn" onclick="startGame()">Start game</button>
+    </div>
+
+    <div id="panel-loading" class="card hidden">
+      <div class="loading"><span class="spinner"></span><span id="loading-msg">Picking a celebrity…</span></div>
+    </div>
+
+    <div id="panel-game" class="hidden">
+      <div class="card">
+        <div class="game-header">
+          <div class="game-title">WHO AM I?</div>
+          <div class="game-subtitle">Name any famous person — I'll tell you if the answer is older or younger</div>
+        </div>
+        <div class="strikes-row">
+          <div class="strike-dot" id="s1"></div>
+          <div class="strike-dot" id="s2"></div>
+          <div class="strike-dot" id="s3"></div>
+        </div>
+        <div class="range-label" id="range-label">Make your first guess to start narrowing the range</div>
+        <div class="range-rule" id="range-rule"></div>
+        <div class="tl-wrap">
+          <div class="tl-ends"><span>younger (1)</span><span>older (100)</span></div>
+          <div class="tl-track"><div class="tl-fill" id="tl-fill" style="left:0%;width:100%;background:var(--surface2);"></div></div>
+          <div class="tl-pins" id="tl-pins"></div>
+        </div>
+        <div class="input-row">
+          <input type="text" id="guess-input" placeholder="Name a famous person…" autocomplete="off" onkeydown="if(event.key==='Enter'&&!guessing)submitGuess()" />
+          <button class="guess-btn" id="guess-btn" onclick="submitGuess()">Guess</button>
+        </div>
+        <div class="log" id="guess-log"></div>
+      </div>
+    </div>
+
+    <div id="panel-result" class="card hidden">
+      <div id="result-inner"></div>
+      <div id="result-gallery"></div>
+      <div class="tl-wrap">
+        <div class="tl-ends"><span>younger (1)</span><span>older (100)</span></div>
+        <div class="tl-track"><div class="tl-fill" style="left:0%;width:100%;background:var(--surface2);"></div></div>
+        <div class="tl-pins" id="result-pins"></div>
+      </div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn-secondary" onclick="resetGame()">↺ Play again</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-lb" class="hidden">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-family:'Bebas Neue';font-size:22px;letter-spacing:1px;color:var(--accent);">Leaderboard</span>
+        <button class="btn-sm" onclick="clearLB()">Clear</button>
+      </div>
+      <div id="lb-body"><div style="font-size:13px;color:var(--text3);text-align:center;padding:1rem 0;">No games played yet.</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-label">Played</div><div class="stat-value" id="stat-played">0</div></div>
+      <div class="stat-box"><div class="stat-label">Win rate</div><div class="stat-value" id="stat-wr">—</div></div>
+      <div class="stat-box"><div class="stat-label">Best score</div><div class="stat-value" id="stat-best">—</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// API KEY
+// ─────────────────────────────────────────────────────────────────────────────
+let API_KEY = localStorage.getItem('ou_api_key') || '';
+updateApiUI();
+
+function saveKey() {
+  const v = document.getElementById('api-key-input').value.trim();
+  if (!v) return;
+  API_KEY = v;
+  localStorage.setItem('ou_api_key', v);
+  updateApiUI();
+}
+function updateApiUI() {
+  const sec = document.getElementById('api-section');
+  const lbl = document.getElementById('api-label');
+  if (API_KEY) {
+    sec.className = 'api-section ok';
+    lbl.className = 'api-label ok';
+    lbl.textContent = '✓ API key active — any famous person you type will be recognized via web search.';
+    document.getElementById('api-row') && (document.getElementById('api-row').style.display = 'none');
+  }
+  document.getElementById('mode-indicator').innerHTML = API_KEY
+    ? '<span class="mode-badge ai">✓ AI mode</span>'
+    : '<span class="mode-badge classic">Classic mode</span>';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANTHROPIC API CALL — uses web_search tool so it can look up anyone
+// ─────────────────────────────────────────────────────────────────────────────
+async function callAI(systemPrompt, userPrompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1024,
+      system: systemPrompt,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  // collect all text blocks — web_search may produce multiple turns
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const m = text.match(/\{[\s\S]*?\}/);
+  if (!m) throw new Error('No JSON in response');
+  return JSON.parse(m[0]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CELEBRITY DATABASE (static fallback — ~200 entries)
+// ─────────────────────────────────────────────────────────────────────────────
+const DB = [
+  {name:"Elvis Presley",age:42,born:1935,aliases:["elvis"],wiki:"Elvis_Presley"},
+  {name:"Frank Sinatra",age:82,born:1915,aliases:["sinatra","ol blue eyes"],wiki:"Frank_Sinatra"},
+  {name:"John Lennon",age:40,born:1940,aliases:["lennon"],wiki:"John_Lennon"},
+  {name:"Paul McCartney",age:83,born:1942,aliases:["mccartney"],wiki:"Paul_McCartney"},
+  {name:"George Harrison",age:58,born:1943,aliases:["harrison"],wiki:"George_Harrison"},
+  {name:"Ringo Starr",age:85,born:1940,aliases:["ringo","starr"],wiki:"Ringo_Starr"},
+  {name:"Mick Jagger",age:82,born:1943,aliases:["jagger"],wiki:"Mick_Jagger"},
+  {name:"Keith Richards",age:82,born:1943,aliases:["richards"],wiki:"Keith_Richards"},
+  {name:"Jimi Hendrix",age:27,born:1942,aliases:["hendrix","jimi"],wiki:"Jimi_Hendrix"},
+  {name:"Janis Joplin",age:27,born:1943,aliases:["joplin","janis"],wiki:"Janis_Joplin"},
+  {name:"Jim Morrison",age:27,born:1943,aliases:["morrison"],wiki:"Jim_Morrison"},
+  {name:"Bob Dylan",age:84,born:1941,aliases:["dylan"],wiki:"Bob_Dylan"},
+  {name:"David Bowie",age:69,born:1947,aliases:["bowie","ziggy stardust"],wiki:"David_Bowie"},
+  {name:"Freddie Mercury",age:45,born:1946,aliases:["mercury","freddie"],wiki:"Freddie_Mercury"},
+  {name:"Elton John",age:78,born:1947,aliases:["elton"],wiki:"Elton_John"},
+  {name:"Stevie Wonder",age:75,born:1950,aliases:["wonder"],wiki:"Stevie_Wonder"},
+  {name:"Michael Jackson",age:50,born:1958,aliases:["mj","king of pop","jacko"],wiki:"Michael_Jackson"},
+  {name:"Prince",age:57,born:1958,aliases:["prince rogers nelson","the artist"],wiki:"Prince_(musician)"},
+  {name:"Madonna",age:67,born:1958,aliases:["material girl"],wiki:"Madonna"},
+  {name:"Bruce Springsteen",age:76,born:1949,aliases:["the boss","springsteen"],wiki:"Bruce_Springsteen"},
+  {name:"Billy Joel",age:76,born:1949,aliases:["joel","piano man"],wiki:"Billy_Joel"},
+  {name:"Dolly Parton",age:80,born:1946,aliases:["dolly"],wiki:"Dolly_Parton"},
+  {name:"Johnny Cash",age:71,born:1932,aliases:["cash","man in black"],wiki:"Johnny_Cash"},
+  {name:"Bob Marley",age:36,born:1945,aliases:["marley"],wiki:"Bob_Marley"},
+  {name:"Whitney Houston",age:48,born:1963,aliases:["whitney"],wiki:"Whitney_Houston"},
+  {name:"Mariah Carey",age:54,born:1969,aliases:["mariah"],wiki:"Mariah_Carey"},
+  {name:"Celine Dion",age:57,born:1968,aliases:["celine"],wiki:"Celine_Dion"},
+  {name:"Tina Turner",age:83,born:1939,aliases:["tina"],wiki:"Tina_Turner"},
+  {name:"Aretha Franklin",age:76,born:1942,aliases:["aretha","queen of soul"],wiki:"Aretha_Franklin"},
+  {name:"Ray Charles",age:73,born:1930,aliases:["ray","the genius"],wiki:"Ray_Charles"},
+  {name:"James Brown",age:73,born:1933,aliases:["godfather of soul"],wiki:"James_Brown"},
+  {name:"Chuck Berry",age:90,born:1926,aliases:["berry"],wiki:"Chuck_Berry"},
+  {name:"Little Richard",age:87,born:1932,aliases:[],wiki:"Little_Richard"},
+  {name:"Buddy Holly",age:22,born:1936,aliases:["holly"],wiki:"Buddy_Holly"},
+  {name:"Neil Young",age:80,born:1945,aliases:["young"],wiki:"Neil_Young"},
+  {name:"Eric Clapton",age:81,born:1945,aliases:["clapton","slowhand"],wiki:"Eric_Clapton"},
+  {name:"Jimmy Page",age:82,born:1944,aliases:["page"],wiki:"Jimmy_Page"},
+  {name:"Robert Plant",age:77,born:1948,aliases:["plant"],wiki:"Robert_Plant"},
+  {name:"Roger Waters",age:82,born:1943,aliases:["waters"],wiki:"Roger_Waters"},
+  {name:"David Gilmour",age:79,born:1946,aliases:["gilmour"],wiki:"David_Gilmour"},
+  {name:"Kurt Cobain",age:27,born:1967,aliases:["cobain","kurt"],wiki:"Kurt_Cobain"},
+  {name:"Dave Grohl",age:57,born:1969,aliases:["grohl"],wiki:"Dave_Grohl"},
+  {name:"Eddie Vedder",age:61,born:1964,aliases:["vedder"],wiki:"Eddie_Vedder"},
+  {name:"Lenny Kravitz",age:61,born:1964,aliases:["kravitz"],wiki:"Lenny_Kravitz"},
+  {name:"Sheryl Crow",age:63,born:1962,aliases:["crow"],wiki:"Sheryl_Crow"},
+  {name:"Tracy Chapman",age:61,born:1964,aliases:["chapman"],wiki:"Tracy_Chapman"},
+  {name:"Eminem",age:53,born:1972,aliases:["slim shady","marshall mathers","em"],wiki:"Eminem"},
+  {name:"Jay-Z",age:56,born:1969,aliases:["jay z","shawn carter","hov"],wiki:"Jay-Z"},
+  {name:"Kanye West",age:47,born:1977,aliases:["ye","yeezy"],wiki:"Kanye_West"},
+  {name:"Drake",age:38,born:1986,aliases:["aubrey graham","drizzy"],wiki:"Drake_(musician)"},
+  {name:"Kendrick Lamar",age:37,born:1987,aliases:["kendrick","kdot"],wiki:"Kendrick_Lamar"},
+  {name:"Beyonce",age:44,born:1981,aliases:["beyoncé","queen bey","bey"],wiki:"Beyoncé"},
+  {name:"Rihanna",age:37,born:1988,aliases:["riri"],wiki:"Rihanna"},
+  {name:"Taylor Swift",age:36,born:1989,aliases:["tswift","taylor"],wiki:"Taylor_Swift"},
+  {name:"Lady Gaga",age:39,born:1986,aliases:["gaga","stefani germanotta"],wiki:"Lady_Gaga"},
+  {name:"Adele",age:37,born:1988,aliases:["adele adkins"],wiki:"Adele"},
+  {name:"Katy Perry",age:41,born:1984,aliases:["perry"],wiki:"Katy_Perry"},
+  {name:"Nicki Minaj",age:42,born:1982,aliases:["nicki"],wiki:"Nicki_Minaj"},
+  {name:"Cardi B",age:32,born:1992,aliases:["cardi"],wiki:"Cardi_B"},
+  {name:"Usher",age:47,born:1978,aliases:["usher raymond"],wiki:"Usher_(musician)"},
+  {name:"Alicia Keys",age:44,born:1981,aliases:["keys"],wiki:"Alicia_Keys"},
+  {name:"Justin Timberlake",age:45,born:1981,aliases:["jt","timberlake"],wiki:"Justin_Timberlake"},
+  {name:"Justin Bieber",age:31,born:1994,aliases:["bieber","biebs"],wiki:"Justin_Bieber"},
+  {name:"Ariana Grande",age:32,born:1993,aliases:["ari","grande"],wiki:"Ariana_Grande"},
+  {name:"Ed Sheeran",age:35,born:1991,aliases:["sheeran"],wiki:"Ed_Sheeran"},
+  {name:"Bruno Mars",age:40,born:1985,aliases:["mars"],wiki:"Bruno_Mars"},
+  {name:"The Weeknd",age:35,born:1990,aliases:["weeknd","abel tesfaye","abel"],wiki:"The_Weeknd"},
+  {name:"Post Malone",age:30,born:1995,aliases:["post","posty"],wiki:"Post_Malone"},
+  {name:"Billie Eilish",age:23,born:2001,aliases:["billie"],wiki:"Billie_Eilish"},
+  {name:"Olivia Rodrigo",age:22,born:2003,aliases:["olivia"],wiki:"Olivia_Rodrigo"},
+  {name:"Harry Styles",age:31,born:1994,aliases:["styles","harry"],wiki:"Harry_Styles"},
+  {name:"Dua Lipa",age:29,born:1995,aliases:["dua"],wiki:"Dua_Lipa"},
+  {name:"Miley Cyrus",age:32,born:1992,aliases:["miley"],wiki:"Miley_Cyrus"},
+  {name:"Selena Gomez",age:33,born:1992,aliases:["selena"],wiki:"Selena_Gomez"},
+  {name:"Marvin Gaye",age:44,born:1939,aliases:["gaye"],wiki:"Marvin_Gaye"},
+  {name:"Diana Ross",age:81,born:1944,aliases:["ross"],wiki:"Diana_Ross"},
+  {name:"Lionel Richie",age:76,born:1949,aliases:["richie"],wiki:"Lionel_Richie"},
+  {name:"John Mayer",age:48,born:1977,aliases:["mayer"],wiki:"John_Mayer"},
+  {name:"Marilyn Monroe",age:36,born:1926,aliases:["norma jean","monroe"],wiki:"Marilyn_Monroe"},
+  {name:"Audrey Hepburn",age:63,born:1929,aliases:["audrey"],wiki:"Audrey_Hepburn"},
+  {name:"James Dean",age:24,born:1931,aliases:["dean"],wiki:"James_Dean"},
+  {name:"Marlon Brando",age:80,born:1924,aliases:["brando"],wiki:"Marlon_Brando"},
+  {name:"Cary Grant",age:82,born:1904,aliases:["grant"],wiki:"Cary_Grant"},
+  {name:"Grace Kelly",age:52,born:1929,aliases:["kelly"],wiki:"Grace_Kelly"},
+  {name:"Humphrey Bogart",age:57,born:1899,aliases:["bogart","bogie"],wiki:"Humphrey_Bogart"},
+  {name:"Clint Eastwood",age:95,born:1930,aliases:["eastwood","dirty harry"],wiki:"Clint_Eastwood"},
+  {name:"Jack Nicholson",age:88,born:1937,aliases:["nicholson"],wiki:"Jack_Nicholson"},
+  {name:"Al Pacino",age:85,born:1940,aliases:["pacino","scarface"],wiki:"Al_Pacino"},
+  {name:"Robert De Niro",age:82,born:1943,aliases:["deniro","de niro"],wiki:"Robert_De_Niro"},
+  {name:"Meryl Streep",age:77,born:1949,aliases:["streep"],wiki:"Meryl_Streep"},
+  {name:"Harrison Ford",age:83,born:1942,aliases:["ford","han solo","indiana jones"],wiki:"Harrison_Ford"},
+  {name:"Sylvester Stallone",age:79,born:1946,aliases:["stallone","rocky","rambo","sly"],wiki:"Sylvester_Stallone"},
+  {name:"Arnold Schwarzenegger",age:77,born:1947,aliases:["arnold","terminator","arnie"],wiki:"Arnold_Schwarzenegger"},
+  {name:"Bruce Willis",age:70,born:1955,aliases:["willis"],wiki:"Bruce_Willis"},
+  {name:"Eddie Murphy",age:64,born:1961,aliases:["murphy"],wiki:"Eddie_Murphy"},
+  {name:"Tom Hanks",age:69,born:1956,aliases:["hanks"],wiki:"Tom_Hanks"},
+  {name:"Tom Cruise",age:63,born:1962,aliases:["cruise"],wiki:"Tom_Cruise"},
+  {name:"Denzel Washington",age:71,born:1954,aliases:["denzel"],wiki:"Denzel_Washington"},
+  {name:"Julia Roberts",age:58,born:1967,aliases:["roberts"],wiki:"Julia_Roberts"},
+  {name:"Brad Pitt",age:62,born:1963,aliases:["pitt"],wiki:"Brad_Pitt"},
+  {name:"Angelina Jolie",age:50,born:1975,aliases:["angelina","jolie"],wiki:"Angelina_Jolie"},
+  {name:"Leonardo DiCaprio",age:51,born:1974,aliases:["dicaprio","leo"],wiki:"Leonardo_DiCaprio"},
+  {name:"Jennifer Aniston",age:57,born:1969,aliases:["aniston"],wiki:"Jennifer_Aniston"},
+  {name:"Johnny Depp",age:62,born:1963,aliases:["depp"],wiki:"Johnny_Depp"},
+  {name:"Will Smith",age:57,born:1968,aliases:["fresh prince"],wiki:"Will_Smith"},
+  {name:"Halle Berry",age:59,born:1966,aliases:["berry"],wiki:"Halle_Berry"},
+  {name:"George Clooney",age:65,born:1961,aliases:["clooney"],wiki:"George_Clooney"},
+  {name:"Matt Damon",age:55,born:1970,aliases:["damon"],wiki:"Matt_Damon"},
+  {name:"Natalie Portman",age:44,born:1981,aliases:["portman"],wiki:"Natalie_Portman"},
+  {name:"Nicole Kidman",age:58,born:1967,aliases:["kidman"],wiki:"Nicole_Kidman"},
+  {name:"Robert Downey Jr",age:61,born:1965,aliases:["rdj","iron man","downey"],wiki:"Robert_Downey_Jr."},
+  {name:"Scarlett Johansson",age:41,born:1984,aliases:["scarlett","johansson"],wiki:"Scarlett_Johansson"},
+  {name:"Ryan Reynolds",age:49,born:1976,aliases:["reynolds","deadpool"],wiki:"Ryan_Reynolds"},
+  {name:"Reese Witherspoon",age:50,born:1976,aliases:["witherspoon","reese"],wiki:"Reese_Witherspoon"},
+  {name:"Dwayne Johnson",age:53,born:1972,aliases:["the rock","rock","dwayne"],wiki:"Dwayne_Johnson"},
+  {name:"Charlize Theron",age:50,born:1975,aliases:["theron"],wiki:"Charlize_Theron"},
+  {name:"Chris Pratt",age:46,born:1979,aliases:["pratt"],wiki:"Chris_Pratt"},
+  {name:"Emma Stone",age:37,born:1988,aliases:["stone"],wiki:"Emma_Stone"},
+  {name:"Chris Hemsworth",age:42,born:1983,aliases:["hemsworth","thor"],wiki:"Chris_Hemsworth"},
+  {name:"Jennifer Lawrence",age:35,born:1990,aliases:["lawrence","jlaw"],wiki:"Jennifer_Lawrence"},
+  {name:"Hugh Jackman",age:57,born:1968,aliases:["jackman","wolverine"],wiki:"Hugh_Jackman"},
+  {name:"Margot Robbie",age:35,born:1990,aliases:["robbie","barbie"],wiki:"Margot_Robbie"},
+  {name:"Ryan Gosling",age:45,born:1980,aliases:["gosling"],wiki:"Ryan_Gosling"},
+  {name:"Zendaya",age:29,born:1996,aliases:["zendaya coleman"],wiki:"Zendaya"},
+  {name:"Keanu Reeves",age:61,born:1964,aliases:["keanu","neo","john wick"],wiki:"Keanu_Reeves"},
+  {name:"Pedro Pascal",age:50,born:1975,aliases:["pascal"],wiki:"Pedro_Pascal"},
+  {name:"Timothee Chalamet",age:30,born:1995,aliases:["chalamet"],wiki:"Timothée_Chalamet"},
+  {name:"Robin Williams",age:63,born:1951,aliases:["robin"],wiki:"Robin_Williams"},
+  {name:"Morgan Freeman",age:88,born:1937,aliases:["freeman"],wiki:"Morgan_Freeman"},
+  {name:"Samuel L Jackson",age:77,born:1948,aliases:["samuel jackson","slj"],wiki:"Samuel_L._Jackson"},
+  {name:"Anthony Hopkins",age:88,born:1937,aliases:["hannibal","hopkins"],wiki:"Anthony_Hopkins"},
+  {name:"Jennifer Lopez",age:56,born:1969,aliases:["jlo","j-lo","lopez"],wiki:"Jennifer_Lopez"},
+  {name:"Muhammad Ali",age:74,born:1942,aliases:["cassius clay","ali","the greatest","clay"],wiki:"Muhammad_Ali"},
+  {name:"Michael Jordan",age:63,born:1963,aliases:["mj","air jordan","jordan"],wiki:"Michael_Jordan"},
+  {name:"LeBron James",age:41,born:1984,aliases:["lebron","king james","lbj"],wiki:"LeBron_James"},
+  {name:"Kobe Bryant",age:41,born:1978,aliases:["kobe","black mamba"],wiki:"Kobe_Bryant"},
+  {name:"Steph Curry",age:37,born:1988,aliases:["stephen curry","curry"],wiki:"Stephen_Curry"},
+  {name:"Magic Johnson",age:65,born:1959,aliases:["magic"],wiki:"Magic_Johnson"},
+  {name:"Larry Bird",age:69,born:1956,aliases:["bird","larry legend"],wiki:"Larry_Bird"},
+  {name:"Shaquille ONeal",age:53,born:1972,aliases:["shaq"],wiki:"Shaquille_O'Neal"},
+  {name:"Charles Barkley",age:62,born:1963,aliases:["barkley","sir charles","chuck"],wiki:"Charles_Barkley"},
+  {name:"Kevin Durant",age:37,born:1988,aliases:["kd","durant"],wiki:"Kevin_Durant"},
+  {name:"Giannis Antetokounmpo",age:31,born:1994,aliases:["giannis","greek freak"],wiki:"Giannis_Antetokounmpo"},
+  {name:"Tom Brady",age:48,born:1977,aliases:["brady"],wiki:"Tom_Brady"},
+  {name:"Patrick Mahomes",age:30,born:1995,aliases:["mahomes"],wiki:"Patrick_Mahomes"},
+  {name:"Peyton Manning",age:49,born:1976,aliases:["manning","peyton"],wiki:"Peyton_Manning"},
+  {name:"Aaron Rodgers",age:42,born:1983,aliases:["rodgers"],wiki:"Aaron_Rodgers"},
+  {name:"Joe Montana",age:69,born:1956,aliases:["montana"],wiki:"Joe_Montana"},
+  {name:"Jerry Rice",age:63,born:1962,aliases:["rice"],wiki:"Jerry_Rice"},
+  {name:"Tiger Woods",age:50,born:1975,aliases:["tiger"],wiki:"Tiger_Woods"},
+  {name:"Jack Nicklaus",age:86,born:1940,aliases:["golden bear","nicklaus"],wiki:"Jack_Nicklaus"},
+  {name:"Serena Williams",age:44,born:1981,aliases:["serena"],wiki:"Serena_Williams"},
+  {name:"Venus Williams",age:45,born:1980,aliases:["venus"],wiki:"Venus_Williams"},
+  {name:"Roger Federer",age:44,born:1981,aliases:["federer","fed"],wiki:"Roger_Federer"},
+  {name:"Rafael Nadal",age:39,born:1986,aliases:["nadal","rafa"],wiki:"Rafael_Nadal"},
+  {name:"Novak Djokovic",age:38,born:1987,aliases:["djokovic","nole"],wiki:"Novak_Djokovic"},
+  {name:"Cristiano Ronaldo",age:41,born:1985,aliases:["ronaldo","cr7"],wiki:"Cristiano_Ronaldo"},
+  {name:"Lionel Messi",age:38,born:1987,aliases:["messi","leo messi","leo"],wiki:"Lionel_Messi"},
+  {name:"Pele",age:82,born:1940,aliases:["pelé"],wiki:"Pelé"},
+  {name:"Diego Maradona",age:60,born:1960,aliases:["maradona","diego"],wiki:"Diego_Maradona"},
+  {name:"Usain Bolt",age:39,born:1986,aliases:["bolt"],wiki:"Usain_Bolt"},
+  {name:"Michael Phelps",age:40,born:1985,aliases:["phelps"],wiki:"Michael_Phelps"},
+  {name:"Simone Biles",age:29,born:1997,aliases:["biles"],wiki:"Simone_Biles"},
+  {name:"Wayne Gretzky",age:65,born:1961,aliases:["gretzky","the great one"],wiki:"Wayne_Gretzky"},
+  {name:"Mike Tyson",age:59,born:1966,aliases:["tyson","iron mike"],wiki:"Mike_Tyson"},
+  {name:"Floyd Mayweather",age:48,born:1977,aliases:["mayweather","money"],wiki:"Floyd_Mayweather_Jr."},
+  {name:"Derek Jeter",age:51,born:1974,aliases:["jeter"],wiki:"Derek_Jeter"},
+  {name:"Alex Rodriguez",age:50,born:1975,aliases:["a-rod","arod"],wiki:"Alex_Rodriguez"},
+  {name:"Babe Ruth",age:53,born:1895,aliases:["the babe","bambino","ruth"],wiki:"Babe_Ruth"},
+  {name:"Shohei Ohtani",age:31,born:1994,aliases:["ohtani"],wiki:"Shohei_Ohtani"},
+  {name:"David Beckham",age:51,born:1975,aliases:["beckham","becks"],wiki:"David_Beckham"},
+  {name:"Conor McGregor",age:36,born:1988,aliases:["mcgregor","notorious"],wiki:"Conor_McGregor"},
+  {name:"George Washington",age:67,born:1732,aliases:["washington"],wiki:"George_Washington"},
+  {name:"Thomas Jefferson",age:83,born:1743,aliases:["jefferson"],wiki:"Thomas_Jefferson"},
+  {name:"Abraham Lincoln",age:56,born:1809,aliases:["lincoln","honest abe","abe"],wiki:"Abraham_Lincoln"},
+  {name:"Theodore Roosevelt",age:60,born:1858,aliases:["teddy","teddy roosevelt","tr"],wiki:"Theodore_Roosevelt"},
+  {name:"Franklin Roosevelt",age:63,born:1882,aliases:["fdr","franklin"],wiki:"Franklin_D._Roosevelt"},
+  {name:"John F Kennedy",age:46,born:1917,aliases:["jfk","kennedy"],wiki:"John_F._Kennedy"},
+  {name:"Ronald Reagan",age:93,born:1911,aliases:["reagan"],wiki:"Ronald_Reagan"},
+  {name:"Bill Clinton",age:79,born:1946,aliases:["clinton"],wiki:"Bill_Clinton"},
+  {name:"George W Bush",age:79,born:1946,aliases:["dubya","george w"],wiki:"George_W._Bush"},
+  {name:"Barack Obama",age:64,born:1961,aliases:["obama"],wiki:"Barack_Obama"},
+  {name:"Donald Trump",age:79,born:1946,aliases:["trump"],wiki:"Donald_Trump"},
+  {name:"Joe Biden",age:82,born:1942,aliases:["biden"],wiki:"Joe_Biden"},
+  {name:"Kamala Harris",age:61,born:1964,aliases:["kamala"],wiki:"Kamala_Harris"},
+  {name:"Hillary Clinton",age:78,born:1947,aliases:["hillary","hrc"],wiki:"Hillary_Clinton"},
+  {name:"Bernie Sanders",age:84,born:1941,aliases:["bernie"],wiki:"Bernie_Sanders"},
+  {name:"Alexandria Ocasio-Cortez",age:36,born:1989,aliases:["aoc"],wiki:"Alexandria_Ocasio-Cortez"},
+  {name:"Winston Churchill",age:90,born:1874,aliases:["churchill"],wiki:"Winston_Churchill"},
+  {name:"Margaret Thatcher",age:87,born:1925,aliases:["thatcher","iron lady"],wiki:"Margaret_Thatcher"},
+  {name:"Emmanuel Macron",age:47,born:1977,aliases:["macron"],wiki:"Emmanuel_Macron"},
+  {name:"Angela Merkel",age:71,born:1954,aliases:["merkel"],wiki:"Angela_Merkel"},
+  {name:"Vladimir Putin",age:73,born:1952,aliases:["putin"],wiki:"Vladimir_Putin"},
+  {name:"Napoleon Bonaparte",age:51,born:1769,aliases:["napoleon"],wiki:"Napoleon"},
+  {name:"Queen Victoria",age:81,born:1819,aliases:["victoria"],wiki:"Queen_Victoria"},
+  {name:"Mahatma Gandhi",age:78,born:1869,aliases:["gandhi"],wiki:"Mahatma_Gandhi"},
+  {name:"Nelson Mandela",age:95,born:1918,aliases:["mandela","madiba"],wiki:"Nelson_Mandela"},
+  {name:"Fidel Castro",age:90,born:1926,aliases:["castro"],wiki:"Fidel_Castro"},
+  {name:"Mao Zedong",age:82,born:1893,aliases:["mao","chairman mao"],wiki:"Mao_Zedong"},
+  {name:"Joseph Stalin",age:74,born:1878,aliases:["stalin"],wiki:"Joseph_Stalin"},
+  {name:"Vladimir Lenin",age:53,born:1870,aliases:["lenin"],wiki:"Vladimir_Lenin"},
+  {name:"Volodymyr Zelensky",age:47,born:1978,aliases:["zelensky","zelenskyy"],wiki:"Volodymyr_Zelenskyy"},
+  {name:"Justin Trudeau",age:54,born:1971,aliases:["trudeau"],wiki:"Justin_Trudeau"},
+  {name:"Jacinda Ardern",age:45,born:1980,aliases:["ardern"],wiki:"Jacinda_Ardern"},
+  {name:"Benjamin Netanyahu",age:76,born:1949,aliases:["netanyahu","bibi"],wiki:"Benjamin_Netanyahu"},
+];
+
+const EASY=new Set(['Elvis Presley','John Lennon','Paul McCartney','Mick Jagger','Jimi Hendrix','Bob Dylan','David Bowie','Freddie Mercury','Elton John','Michael Jackson','Madonna','Whitney Houston','Marilyn Monroe','James Dean','Marlon Brando','Audrey Hepburn','Clint Eastwood','Al Pacino','Robert De Niro','Meryl Streep','Tom Hanks','Tom Cruise','Julia Roberts','Brad Pitt','Angelina Jolie','Leonardo DiCaprio','Will Smith','Robin Williams','Harrison Ford','Arnold Schwarzenegger','Muhammad Ali','Michael Jordan','LeBron James','Kobe Bryant','Tom Brady','Tiger Woods','Serena Williams','Cristiano Ronaldo','Lionel Messi','Pele','George Washington','Abraham Lincoln','John F Kennedy','Winston Churchill','Napoleon Bonaparte','Nelson Mandela','Mahatma Gandhi','Barack Obama','Donald Trump','Taylor Swift','Beyonce','Eminem','Jay-Z','Adele','Rihanna','Lady Gaga','Justin Bieber','Ariana Grande','Dwayne Johnson','Michael Phelps','Usain Bolt','Roger Federer']);
+const HARD=new Set(['Keith Richards','Jimmy Page','Robert Plant','Roger Waters','David Gilmour','Dave Grohl','Eddie Vedder','Lenny Kravitz','Tracy Chapman','Sheryl Crow','Marvin Gaye','Diana Ross','Lionel Richie','John Mayer','Humphrey Bogart','Jack Nicholson','Joe Montana','Jack Nicklaus','Floyd Mayweather','Diego Maradona','Babe Ruth','Giannis Antetokounmpo','Kevin Durant','Conor McGregor','Jacinda Ardern','Margaret Thatcher','Fidel Castro','Mao Zedong','Joseph Stalin','Vladimir Lenin','Queen Victoria','Volodymyr Zelensky','Timothee Chalamet']);
+const POOL={easy:DB.filter(c=>EASY.has(c.name)),medium:DB.filter(c=>!EASY.has(c.name)&&!HARD.has(c.name)),hard:DB.filter(c=>HARD.has(c.name))};
+const DIFF_HINTS={easy:'Easy: household names across all categories.',medium:'Medium: very well known but not the absolute top tier.',hard:'Hard: deeper cuts — niche athletes, historical figures, rising stars.'};
+const TL_MIN=1,TL_MAX=100;
+let G=null,leaderboard=[],guessing=false,usedNames={easy:new Set(),medium:new Set(),hard:new Set()};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WIKIPEDIA IMAGE — robust multi-strategy fetch
+// ─────────────────────────────────────────────────────────────────────────────
+const imgCache={};
+
+async function fetchWikiImg(title){
+  if(!title)return null;
+  const key=title.trim();
+  if(imgCache[key]!==undefined)return imgCache[key];
+  try{
+    const url=`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(key)}&prop=pageimages&format=json&pithumbsize=300&origin=*`;
+    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!r.ok){imgCache[key]=null;return null;}
+    const d=await r.json();
+    const pages=d.query?.pages||{};
+    const page=Object.values(pages)[0];
+    // page -1 means not found
+    if(page?.missing!==undefined){imgCache[key]=null;return null;}
+    const src=page?.thumbnail?.source||null;
+    imgCache[key]=src;
+    return src;
+  }catch(e){imgCache[key]=null;return null;}
+}
+
+async function getImg(name, wikiTitle){
+  // Strategy 1: use provided wiki title
+  if(wikiTitle){
+    const r=await fetchWikiImg(wikiTitle);
+    if(r)return r;
+  }
+  // Strategy 2: look up in static DB
+  const entry=DB.find(c=>norm(c.name)===norm(name));
+  if(entry?.wiki){
+    const r=await fetchWikiImg(entry.wiki);
+    if(r)return r;
+  }
+  // Strategy 3: try name as wiki slug directly
+  const slug=name.trim().replace(/ /g,'_');
+  const r=await fetchWikiImg(slug);
+  if(r)return r;
+  // Strategy 4: try first+last name only (strips middle names)
+  const parts=name.trim().split(' ');
+  if(parts.length>2){
+    const short=`${parts[0]}_${parts[parts.length-1]}`;
+    return fetchWikiImg(short);
+  }
+  return null;
+}
+
+// Swap a placeholder thumb element for a real image once loaded
+function swapThumb(item, thumbEl, type, imgSrc){
+  if(!imgSrc)return;
+  const nt=makeImg(imgSrc,typeColor(type),36);
+  if(item.contains(thumbEl))item.replaceChild(nt,thumbEl);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function norm(s){return s.toLowerCase().trim().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');}
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.textContent.trim().toLowerCase().includes(t==='game'?'game':'lead')));
+  document.getElementById('tab-game').classList.toggle('hidden',t!=='game');
+  document.getElementById('tab-lb').classList.toggle('hidden',t!=='lb');
+  if(t==='lb')renderLB();
+}
+function setDiff(d){document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.dataset.diff===d));document.getElementById('diff-hint').textContent=DIFF_HINTS[d];}
+function getDiff(){return document.querySelector('.diff-btn.active')?.dataset.diff||'easy';}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function pct(age){return Math.min(100,Math.max(0,Math.round(((Math.min(age,TL_MAX)-TL_MIN)/(TL_MAX-TL_MIN))*100)));}
+function pickPool(diff){
+  const pool=POOL[diff].length?POOL[diff]:DB;
+  const used=usedNames[diff];
+  let avail=pool.filter(c=>!used.has(c.name));
+  if(!avail.length){used.clear();avail=pool;}
+  const pick=avail[Math.floor(Math.random()*avail.length)];
+  used.add(pick.name);return pick;
+}
+function typeColor(t){return t==='strike'?'var(--danger)':t==='correct'?'var(--success)':'var(--info)';}
+
+function lookupStatic(input){
+  const n=norm(input);
+  let m=DB.find(c=>norm(c.name)===n);if(m)return m;
+  m=DB.find(c=>c.aliases&&c.aliases.some(a=>norm(a)===n));if(m)return m;
+  if(!n.includes(' ')&&n.length>3){m=DB.find(c=>{const p=norm(c.name).split(' ');return p[p.length-1]===n;});if(m)return m;}
+  if(!n.includes(' ')&&n.length>3){const cs=DB.filter(c=>norm(c.name).split(' ')[0]===n);if(cs.length===1)return cs[0];}
+  if(n.length>3){m=DB.find(c=>norm(c.name).includes(n));if(m)return m;}
+  const ws=n.split(' ').filter(w=>w.length>2);
+  if(ws.length>0){m=DB.find(c=>{const cn=norm(c.name);return ws.every(w=>cn.includes(w));});if(m)return m;}
+  if(n.length>4){m=DB.find(c=>c.aliases&&c.aliases.some(a=>norm(a).includes(n)));if(m)return m;}
+  return null;
+}
+function isMatch(input,target){
+  const g=norm(input),t=norm(target);
+  if(g===t)return true;
+  const cel=DB.find(c=>norm(c.name)===t);
+  if(cel&&cel.aliases&&cel.aliases.some(a=>norm(a)===g))return true;
+  const tp=t.split(' '),gp=g.split(' ');
+  if(tp[tp.length-1]===gp[gp.length-1]&&gp[gp.length-1].length>3)return true;
+  if(g.includes(t)||t.includes(g))return true;
+  const ws=g.split(' ').filter(w=>w.length>2);
+  if(ws.length>0&&ws.every(w=>t.includes(w)))return true;
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GUESS RESOLUTION — AI FIRST, then static fallback
+// Key insight: when API_KEY is set, ALWAYS call the AI for every guess.
+// The static list is only used if the AI call fails entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+async function resolveGuess(name) {
+  // Always try AI first if key is available
+  if (API_KEY) {
+    try {
+      const result = await callAI(
+        `You are helping run a celebrity guessing game. Your job is ONLY to look up a person's age — nothing else.
+Always use the web_search tool to find the person's Wikipedia page or another reliable source.
+IMPORTANT: You must return a valid age for any real person, living or historical. Only return null if this is clearly a fictional character or completely made-up name.`,
+        `Look up "${name}" and find their exact birth date and death date (if applicable).
+Calculate their age: if living, subtract birth year from 2026; if deceased, use their age at death.
+Also find their Wikipedia article title (the exact page slug used in the URL).
+
+You MUST use web_search to look this up. Do not rely on memory alone.
+
+Respond with ONLY this JSON object, nothing else:
+{"age": 48, "canonical_name": "Full Official Name", "wiki": "Wikipedia_Article_Title"}
+
+Rules:
+- age must always be a plain integer
+- canonical_name should be their full commonly-known name
+- wiki is the Wikipedia page title (e.g. "Tom_Hanks", "Jimi_Hendrix", "Napoleon")
+- Only set age to null if web_search confirms this is not a real person at all`
+      );
+      if (result.age != null && !isNaN(parseInt(result.age))) {
+        return {
+          age: parseInt(result.age),
+          name: result.canonical_name || name,
+          wiki: result.wiki || null
+        };
+      }
+    } catch(e) {
+      console.warn('AI lookup failed:', e.message);
+    }
+  }
+
+  // Static fallback
+  const found = lookupStatic(name);
+  if (found) return { age: found.age, name: found.name, wiki: found.wiki || null };
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GAME LOGIC
+// ─────────────────────────────────────────────────────────────────────────────
+function bothBounds(){return G.lo!==null&&G.hi!==null;}
+function updateRange(){
+  const rEl=document.getElementById('range-rule'),lEl=document.getElementById('range-label'),fill=document.getElementById('tl-fill');
+  if(!bothBounds()){
+    if(G.lo!==null){lEl.innerHTML=`Answer is older than age <b>${G.lo}</b> — guess someone older`;fill.style.left=pct(G.lo)+'%';fill.style.width=(100-pct(G.lo))+'%';fill.style.background='var(--info)';}
+    else if(G.hi!==null){lEl.innerHTML=`Answer is younger than age <b>${G.hi}</b> — guess someone younger`;fill.style.left='0%';fill.style.width=pct(G.hi)+'%';fill.style.background='var(--info)';}
+    else{lEl.textContent='Make your first guess to start narrowing the range';fill.style.left='0%';fill.style.width='100%';fill.style.background='var(--surface2)';}
+    rEl.classList.remove('active');
+  }else{
+    lEl.innerHTML=`Age range: <b>${G.lo+1}</b> to <b>${G.hi-1}</b>`;
+    fill.style.left=pct(G.lo+1)+'%';fill.style.width=(pct(G.hi-1)-pct(G.lo+1))+'%';fill.style.background='var(--info)';
+    rEl.textContent=`⚠ Guesses must be aged ${G.lo+1}–${G.hi-1} or it's a strike`;
+    rEl.classList.add('active');
+  }
+}
+function processGuess(name,ga,wikiTitle){
+  const ta=G.celeb.age,dir=ga<ta?'older':'younger',arrow=ga<ta?'↑ older':'↓ younger';
+  const setsLo=ga<ta&&(G.lo===null||ga>G.lo),setsHi=ga>ta&&(G.hi===null||ga<G.hi);
+  if(setsLo)G.lo=ga;if(setsHi)G.hi=ga;
+  if(setsLo||setsHi){
+    G.guesses.push({name,age:ga,type:'closer',wiki:wikiTitle});
+    addLog(name,ga,bothBounds()?`Closer! Answer is ${dir} — bracket locked`:`Answer is ${dir} than ${name}`,'closer',arrow,wikiTitle);
+    drawPins('tl-pins',null);updateRange();G.lastGuessAge=ga;return;
+  }
+  if(ga<=G.lo||ga>=G.hi){
+    G.strikes++;updateStrikes();G.guesses.push({name,age:ga,type:'strike',wiki:wikiTitle});
+    const left=3-G.strikes;
+    addLog(name,ga,`Out of range — ${left} strike${left!==1?'s':''} left`,'strike','⚠ outside bracket',wikiTitle);
+    drawPins('tl-pins',null);updateRange();
+    if(G.strikes>=3){G.over=true;finishGame(false);}return;
+  }
+  if(G.lastGuessAge!==null){
+    const pd=Math.abs(G.lastGuessAge-ta),nd=Math.abs(ga-ta);
+    if(nd>=pd){
+      G.strikes++;updateStrikes();G.guesses.push({name,age:ga,type:'strike',wiki:wikiTitle});
+      const left=3-G.strikes;
+      addLog(name,ga,`Wrong direction — ${left} strike${left!==1?'s':''} left`,'strike',arrow,wikiTitle);
+      drawPins('tl-pins',null);updateRange();
+      if(G.strikes>=3){G.over=true;finishGame(false);}G.lastGuessAge=ga;return;
+    }
+  }
+  G.guesses.push({name,age:ga,type:'closer',wiki:wikiTitle});
+  addLog(name,ga,`Closer! Answer is ${dir}`,'closer',arrow,wikiTitle);
+  drawPins('tl-pins',null);updateRange();G.lastGuessAge=ga;
+}
+function updateStrikes(){[1,2,3].forEach(i=>{const e=document.getElementById('s'+i);e.classList.toggle('used',i<=G.strikes);e.textContent=i<=G.strikes?'✕':'';});}
+function drawPins(id,revealAge){
+  const c=document.getElementById(id);if(!c)return;c.innerHTML='';
+  const seen={};G.guesses.forEach(g=>{if(g.age!=null)seen[g.age]=g;});
+  Object.values(seen).forEach(g=>{
+    const pin=document.createElement('div');pin.className='tl-pin '+g.type;pin.style.left=pct(g.age)+'%';
+    pin.innerHTML=`<div class="tl-pin-dot"></div><div class="tl-pin-label">${g.name.split(' ')[0]}<br>${g.age}</div>`;
+    c.appendChild(pin);
+  });
+  if(revealAge!=null){
+    const pin=document.createElement('div');pin.className='tl-pin correct';pin.style.cssText='left:'+pct(revealAge)+'%;z-index:10;';
+    pin.innerHTML=`<div class="tl-pin-dot"></div><div class="tl-pin-label">${G.celeb.name.split(' ')[0]}<br>${revealAge}</div>`;
+    c.appendChild(pin);
+  }
+}
+function makeImg(src,borderColor,size){
+  if(src){
+    const el=document.createElement('img');
+    el.src=src;el.style.cssText=`width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid ${borderColor};background:var(--surface2);`;
+    el.onerror=()=>el.style.display='none';return el;
+  }
+  const el=document.createElement('div');
+  el.style.cssText=`width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;background:var(--surface2);border:2px solid ${borderColor};display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.38)}px;color:var(--text3);`;
+  el.textContent='?';return el;
+}
+function addLog(name,age,verdict,type,arrow,wikiTitle){
+  const item=document.createElement('div');item.className='log-item '+type;
+  const thumb=makeImg(null,typeColor(type),36);
+  item.appendChild(thumb);
+  const body=document.createElement('div');body.className='log-body';
+  const vc={correct:'v-win',strike:'v-bad',closer:'v-ok'}[type]||'v-neutral';
+  body.innerHTML=`<div><span class="log-name">${name}</span>${age!=null?`<span class="log-age">age ${age}</span>`:''}${arrow?`<span class="log-dir">${arrow}</span>`:''}</div><span class="log-verdict ${vc}">${verdict}</span>`;
+  item.appendChild(body);
+  document.getElementById('guess-log').prepend(item);
+  // Always fetch image and swap in when ready
+  getImg(name, wikiTitle).then(src=>{
+    if(src && item.contains(thumb)){
+      const nt=makeImg(src,typeColor(type),36);
+      item.replaceChild(nt,thumb);
+    }
+  });
+}
+
+async function startGame(){
+  document.getElementById('start-btn').disabled=true;
+  hide('panel-setup');hide('panel-result');hide('panel-game');
+  document.getElementById('loading-msg').textContent='Picking a celebrity…';
+  show('panel-loading');
+  const diff=getDiff();
+  const desc={easy:'extremely famous, universally recognized person',medium:'well-known but not absolute top tier',hard:'moderately known — niche or specialist'}[diff];
+  let celeb=null;
+  if(API_KEY){
+    try{
+      const d=await callAI(
+        'You are picking a hidden celebrity for the Older Under guessing game. Use web_search to verify their exact birth date.',
+        `Pick one ${desc} for the Older Under guessing game. Use web_search to look up their Wikipedia page and confirm their exact birth date. Age = if living, age as of 2026; if deceased, age at death. Also get their Wikipedia article title.\n\nRespond with ONLY this JSON:\n{"name":"Full Name","age":50,"born":1974,"wiki":"Wikipedia_Page_Title"}`
+      );
+      if(d.name&&d.age)celeb=d;
+    }catch(e){console.warn('Celebrity pick failed:',e.message);}
+  }
+  if(!celeb||!celeb.name||!celeb.age){celeb=pickPool(diff);}
+  G={celeb,strikes:0,guesses:[],lo:null,hi:null,lastGuessAge:null,over:false,won:false,diff};
+  [1,2,3].forEach(i=>{const e=document.getElementById('s'+i);e.classList.remove('used');e.textContent='';});
+  document.getElementById('tl-fill').style.cssText='left:0%;width:100%;background:var(--surface2);';
+  document.getElementById('tl-pins').innerHTML='';
+  document.getElementById('guess-log').innerHTML='';
+  document.getElementById('guess-input').value='';
+  document.getElementById('range-rule').classList.remove('active');
+  document.getElementById('range-label').textContent='Make your first guess to start narrowing the range';
+  hide('panel-loading');show('panel-game');
+  setTimeout(()=>document.getElementById('guess-input').focus(),50);
+}
+
+async function submitGuess(){
+  if(!G||G.over||guessing)return;
+  const input=document.getElementById('guess-input'),btn=document.getElementById('guess-btn');
+  const name=input.value.trim();if(!name)return;
+  guessing=true;input.disabled=true;btn.disabled=true;input.value='';
+  const logEl=document.getElementById('guess-log');
+
+  // Show loading row
+  const ph=document.createElement('div');ph.className='log-item neutral';
+  const phThumb=document.createElement('div');
+  phThumb.style.cssText='width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;';
+  phThumb.innerHTML='<span class="spinner-sm"></span>';
+  ph.appendChild(phThumb);
+  const phBody=document.createElement('div');phBody.className='log-body';
+  phBody.innerHTML=`<span class="log-name">${name}</span><span class="log-verdict v-neutral">looking up…</span>`;
+  ph.appendChild(phBody);logEl.prepend(ph);
+
+  try{
+    // Check for correct answer first
+    if(isMatch(name,G.celeb.name)){
+      logEl.removeChild(ph);G.won=true;G.over=true;
+      G.guesses.push({name:G.celeb.name,age:G.celeb.age,type:'correct',wiki:G.celeb.wiki||null});
+      addLog(G.celeb.name,G.celeb.age,'Correct!','correct',null,G.celeb.wiki||null);
+      drawPins('tl-pins',null);finishGame(true);return;
+    }
+
+    // Resolve age — AI first, static fallback
+    const resolved = await resolveGuess(name);
+
+    logEl.removeChild(ph);
+
+    if(!resolved){
+      addLog(name,null,'Not recognized — try another name','neutral');
+    } else {
+      processGuess(resolved.name, resolved.age, resolved.wiki||null);
+    }
+  }catch(e){
+    try{logEl.removeChild(ph);}catch(_){}
+    addLog(name,null,'Lookup error — try again','neutral');
+  }finally{
+    guessing=false;input.disabled=false;btn.disabled=false;
+    if(!G.over)setTimeout(()=>input.focus(),50);
+  }
+}
+
+async function finishGame(won){
+  const ta=G.celeb.age;hide('panel-game');
+  const inner=document.getElementById('result-inner');
+  const n=G.guesses.filter(g=>g.age!=null).length;
+  const score=won?Math.max(1,10-(n-1)*2-G.strikes*3):0;
+  const bc=won?'var(--success)':'var(--danger)';
+  // Fetch answer image using wiki title if available
+  const ansImg=await getImg(G.celeb.name, G.celeb.wiki||null);
+  const hero=document.createElement('div');hero.className='result-hero';
+  const imgEl=makeImg(ansImg,bc,90);imgEl.style.marginBottom='10px';
+  hero.appendChild(imgEl);
+  hero.innerHTML+=`<div class="result-title ${won?'win':'lose'}">${won?'YOU GOT IT!':'GAME OVER'}</div>
+    <div class="result-detail">${won?'The answer was':'Three strikes! The answer was'} <strong>${G.celeb.name}</strong>, age ${ta} (born ${G.celeb.born}).</div>
+    ${won?`<div class="result-score">Score: <span>${score}</span></div>`:''}`;
+  inner.innerHTML='';inner.appendChild(hero);
+
+  const gallery=document.getElementById('result-gallery');
+  gallery.innerHTML='<div class="gallery-label">Your guesses</div>';
+  const grid=document.createElement('div');grid.className='gallery';
+  const vg=G.guesses.filter(g=>g.age!=null);
+  // Fetch all images in parallel using stored wiki titles
+  await Promise.all(vg.map(async g=>{
+    if(!g.img) g.img = await getImg(g.name, g.wiki||null);
+  }));
+  vg.forEach(g=>{
+    const card=document.createElement('div');card.className='gallery-card';
+    const img=makeImg(g.img||null,typeColor(g.type),48);
+    const nameEl=document.createElement('div');nameEl.className='gallery-card-name';nameEl.textContent=g.name.split(' ')[0];
+    const ageEl=document.createElement('div');ageEl.className='gallery-card-age';ageEl.style.color=typeColor(g.type);ageEl.textContent='age '+g.age;
+    card.appendChild(img);card.appendChild(nameEl);card.appendChild(ageEl);grid.appendChild(card);
+  });
+  gallery.appendChild(grid);
+  drawPins('result-pins',ta);show('panel-result');
+  leaderboard.unshift({celeb:G.celeb.name,age:ta,diff:G.diff,won,score,guesses:n,ts:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  if(leaderboard.length>20)leaderboard.pop();
+}
+
+function renderLB(){
+  const body=document.getElementById('lb-body');
+  if(!leaderboard.length){body.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:1rem 0;">No games played yet.</div>';updateStats();return;}
+  body.innerHTML=[...leaderboard].sort((a,b)=>b.score-a.score).map((e,i)=>`<div class="lb-row"><span class="lb-rank">${i+1}</span><span class="lb-celeb">${e.celeb}</span><span class="lb-meta">${e.ts} · ${e.diff} · ${e.guesses}g</span><span class="lb-badge ${e.won?'win':'lose'}">${e.won?'Win':'Loss'}</span><span class="lb-score">${e.score}</span></div>`).join('');updateStats();
+}
+function updateStats(){
+  const p=leaderboard.length,w=leaderboard.filter(e=>e.won).length,b=leaderboard.reduce((m,e)=>Math.max(m,e.score),0);
+  document.getElementById('stat-played').textContent=p;
+  document.getElementById('stat-wr').textContent=p?Math.round(w/p*100)+'%':'—';
+  document.getElementById('stat-best').textContent=p?b:'—';
+}
+function clearLB(){if(confirm('Clear all history?')){leaderboard=[];renderLB();}}
+function resetGame(){G=null;hide('panel-result');hide('panel-game');document.getElementById('start-btn').disabled=false;show('panel-setup');}
+</script>
+</body>
+</html>
