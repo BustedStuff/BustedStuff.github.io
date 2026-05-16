@@ -38,14 +38,6 @@ body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif
 .btn-secondary { padding:10px 26px; font-size:14px; font-family:'DM Sans',sans-serif; font-weight:500; background:var(--surface2); color:var(--text); border:1px solid var(--border2); border-radius:12px; cursor:pointer; transition:all .15s; }
 .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
 .btn-sm { padding:5px 12px; font-size:12px; font-family:'DM Sans',sans-serif; background:var(--surface2); color:var(--text2); border:1px solid var(--border); border-radius:8px; cursor:pointer; }
-.api-section { background:var(--warn-bg); border:1px solid var(--warn-border); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
-.api-section.ok { background:var(--success-bg); border-color:var(--success-border); }
-.api-label { font-size:13px; color:var(--warn); margin-bottom:8px; line-height:1.5; }
-.api-label.ok { color:var(--success); }
-.api-row { display:flex; gap:8px; }
-.api-row input { flex:1; padding:8px 12px; font-size:13px; font-family:'DM Sans',sans-serif; background:var(--surface); color:var(--text); border:1px solid var(--border2); border-radius:8px; outline:none; }
-.api-row input:focus { border-color:var(--accent); }
-.api-row button { padding:8px 14px; font-size:13px; font-family:'DM Sans',sans-serif; background:var(--accent); color:#000; border:none; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap; }
 .game-header { text-align:center; padding:6px 0 14px; }
 .game-title { font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:3px; color:var(--accent); line-height:1; margin-bottom:5px; }
 .game-subtitle { font-size:13px; color:var(--text2); font-weight:300; }
@@ -135,13 +127,6 @@ body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif
 
 <div class="main">
 
-  <div class="api-section" id="api-section">
-    <div class="api-label" id="api-label">⚡ Add your <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--accent)">Anthropic API key</a> to recognize <em>any</em> famous person you type and get web-verified ages. Without a key the game uses the built-in list only.</div>
-    <div class="api-row">
-      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
-      <button onclick="saveKey()">Save key</button>
-    </div>
-  </div>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('game')">▶&nbsp; Game</button>
@@ -223,44 +208,25 @@ body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// API KEY
+// WORKER URL — paste your Cloudflare Worker URL here after deploying
 // ─────────────────────────────────────────────────────────────────────────────
-let API_KEY = localStorage.getItem('ou_api_key') || '';
-updateApiUI();
+const WORKER_URL = 'https://hidden-limit-f2ce.nsaund85.workers.dev';
 
-function saveKey() {
-  const v = document.getElementById('api-key-input').value.trim();
-  if (!v) return;
-  API_KEY = v;
-  localStorage.setItem('ou_api_key', v);
-  updateApiUI();
-}
-function updateApiUI() {
-  const sec = document.getElementById('api-section');
-  const lbl = document.getElementById('api-label');
-  if (API_KEY) {
-    sec.className = 'api-section ok';
-    lbl.className = 'api-label ok';
-    lbl.textContent = '✓ API key active — any famous person you type will be recognized via web search.';
-    document.getElementById('api-row') && (document.getElementById('api-row').style.display = 'none');
-  }
-  document.getElementById('mode-indicator').innerHTML = API_KEY
-    ? '<span class="mode-badge ai">✓ AI mode</span>'
-    : '<span class="mode-badge classic">Classic mode</span>';
-}
+const AI_ENABLED = WORKER_URL && WORKER_URL !== 'YOUR_WORKER_URL_HERE';
+
+// Show mode badge
+document.getElementById('mode-indicator').innerHTML = AI_ENABLED
+  ? '<span class="mode-badge ai">✓ AI mode</span>'
+  : '<span class="mode-badge classic">Classic mode</span>';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ANTHROPIC API CALL — uses web_search tool so it can look up anyone
+// AI CALL — routes through your Cloudflare Worker (no API key in browser)
 // ─────────────────────────────────────────────────────────────────────────────
 async function callAI(systemPrompt, userPrompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  if (!AI_ENABLED) throw new Error('Worker URL not configured');
+  const res = await fetch(WORKER_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
       max_tokens: 1024,
@@ -269,9 +235,8 @@ async function callAI(systemPrompt, userPrompt) {
       messages: [{ role: 'user', content: userPrompt }]
     })
   });
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Worker error ${res.status}`);
   const data = await res.json();
-  // collect all text blocks — web_search may produce multiple turns
   const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
   const m = text.match(/\{[\s\S]*?\}/);
   if (!m) throw new Error('No JSON in response');
@@ -604,12 +569,12 @@ function isMatch(input,target){
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GUESS RESOLUTION — AI FIRST, then static fallback
-// Key insight: when API_KEY is set, ALWAYS call the AI for every guess.
+// Key insight: when AI_ENABLED is true, ALWAYS call the AI for every guess.
 // The static list is only used if the AI call fails entirely.
 // ─────────────────────────────────────────────────────────────────────────────
 async function resolveGuess(name) {
   // Always try AI first if key is available
-  if (API_KEY) {
+  if (AI_ENABLED) {
     try {
       const result = await callAI(
         `You are helping run a celebrity guessing game. Your job is ONLY to look up a person's age — nothing else.
@@ -748,7 +713,7 @@ async function startGame(){
   const diff=getDiff();
   const desc={easy:'extremely famous, universally recognized person',medium:'well-known but not absolute top tier',hard:'moderately known — niche or specialist'}[diff];
   let celeb=null;
-  if(API_KEY){
+  if(AI_ENABLED){
     try{
       const d=await callAI(
         'You are picking a hidden celebrity for the Older Under guessing game. Use web_search to verify their exact birth date.',
