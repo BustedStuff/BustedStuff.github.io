@@ -77,6 +77,18 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
 .unified-btn.guess-mode { background: linear-gradient(135deg, #ff6b35, #f59e0b); }
 .input-hint { font-size: 12px; color: var(--text3); font-weight: 700; text-align: center; margin-top: 6px; margin-bottom: 2px; height: 18px; }
 .qa-log { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+.qa-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; margin-bottom: 4px; min-height: 28px; }
+.qa-toolbar-label { font-size: 12px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.qa-sort-toggle { display: flex; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; }
+.qa-sort-btn { padding: 4px 10px; font-size: 11px; font-family: 'Nunito', sans-serif; font-weight: 800; border: none; background: white; color: var(--text2); cursor: pointer; transition: all .15s; }
+.qa-sort-btn.active { background: var(--blue); color: white; }
+.qa-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; max-height: 340px; overflow-y: auto; }
+.qa-split-col { display: flex; flex-direction: column; gap: 6px; }
+.qa-split-header { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; text-align: center; padding: 4px 0; border-radius: 8px; margin-bottom: 2px; }
+.qa-split-header.yes { background: var(--green-bg); color: var(--green); }
+.qa-split-header.no { background: var(--red-bg); color: var(--red); }
+.qa-split .qa-item { font-size: 12px; padding: 7px 10px; }
+.qa-split .qa-q { font-size: 11px; }
 .qa-item { border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; border: 2px solid; }
 .qa-item.yes { background: var(--green-bg); border-color: var(--green-border); color: #15803d; }
 .qa-item.no { background: var(--red-bg); border-color: var(--red-border); color: #b91c1c; }
@@ -193,7 +205,24 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
         </button>
       </div>
       <div class="input-hint" id="input-hint">Type a yes/no question <em>or</em> your guess for the animal</div>
+      <div class="qa-toolbar" id="qa-toolbar" style="display:none;">
+        <span class="qa-toolbar-label" id="qa-count"></span>
+        <div class="qa-sort-toggle">
+          <button class="qa-sort-btn active" id="sort-chrono" onclick="setQAView('chrono')">📋 All</button>
+          <button class="qa-sort-btn" id="sort-split" onclick="setQAView('split')">↕️ Sort</button>
+        </div>
+      </div>
       <div class="qa-log" id="qa-log"></div>
+      <div class="qa-split hidden" id="qa-split">
+        <div class="qa-split-col">
+          <div class="qa-split-header yes">✅ Yes</div>
+          <div id="qa-split-yes"></div>
+        </div>
+        <div class="qa-split-col">
+          <div class="qa-split-header no">❌ No</div>
+          <div id="qa-split-no"></div>
+        </div>
+      </div>
     </div>
   </div>
   <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none;"></canvas>
@@ -417,12 +446,37 @@ function updateInputMode(){
 }
 async function handleInput(){if(!G||G.over||asking)return;const t=document.getElementById('main-input').value.trim();if(!t)return;if(detectInputMode(t)==='guess')await processGuess(t);else await processQuestion(t);}
 
+let qaView='chrono';
+function setQAView(v){
+  qaView=v;
+  document.getElementById('sort-chrono').classList.toggle('active',v==='chrono');
+  document.getElementById('sort-split').classList.toggle('active',v==='split');
+  document.getElementById('qa-log').classList.toggle('hidden',v==='split');
+  document.getElementById('qa-split').classList.toggle('hidden',v==='chrono');
+}
+
 function addQA(q,a,type){
+  // Show toolbar once first real answer arrives
+  if(type!=='thinking'&&G&&G.questions){
+    const tb=document.getElementById('qa-toolbar');
+    if(tb){tb.style.display='flex';}
+    const qc=document.getElementById('qa-count');
+    if(qc){const total=G.questions.length+1;qc.textContent=total+' turn'+(total!==1?'s':'');}
+  }
   const log=document.getElementById('qa-log'),item=document.createElement('div');item.className='qa-item '+type;
   const icon=type==='yes'?'✅':type==='no'?'❌':type==='maybe'?'🤔':'⏳';
   const lbl=type==='yes'?'YES':type==='no'?'NO':type==='maybe'?'SOMETIMES':'…';
   item.innerHTML=`<div class="qa-q">${q}</div>`+(type!=='thinking'?`<div class="qa-a">${icon} <span class="qa-badge">${lbl}</span>${a&&a.trim()?` <span class="qa-explanation">${a}</span>`:''}</div>`:`<div class="qa-a"><span class="spinner-sm"></span> thinking…</div>`);
-  log.prepend(item);return item;
+  log.prepend(item);
+  // Also add to split view
+  if(type==='yes'||type==='no'||type==='maybe'){
+    const splitTarget=document.getElementById(type==='no'?'qa-split-no':'qa-split-yes');
+    if(splitTarget){
+      const clone=item.cloneNode(true);
+      splitTarget.prepend(clone);
+    }
+  }
+  return item;
 }
 
 async function processQuestion(question){
@@ -440,8 +494,15 @@ async function processQuestion(question){
   try{
     const ctx=G.questions.map((q,i)=>`Q${i+1}: ${q.q} → ${q.a}`).join('\n');
     const d=await callAI(
-      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}). RULES: Answer ONLY "yes" or "no". The explanation field MUST always be empty string "". Never add any text, context, reasoning, or clarification. Not even one extra word. Just yes or no.`,
-      `Secret: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nRespond ONLY with this exact JSON, explanation must always be empty: {"answer":"yes","explanation":"","type":"yes"}`
+      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
+CRITICAL RULES:
+- Answer ONLY "yes" or "no" based on REAL, VERIFIED facts about this specific animal.
+- If you are not 100% certain, answer "no" — never guess or assume.
+- The explanation field MUST always be empty string "". Never add any text.
+- Do NOT confuse this animal with similar animals.
+- Do NOT answer based on what "some" individuals do — answer based on what is true for the species generally.
+- Example: Red Kangaroo does NOT have spikes. Wolf is NOT a bird. Dolphin does NOT breathe through gills.`,
+      `Secret animal: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nThink carefully about whether this is factually true for ${G.animal.name} before answering.\nRespond ONLY with this exact JSON: {"answer":"yes","explanation":"","type":"yes"}`
     );
     document.getElementById('qa-log').removeChild(ph);
     const type=d.type||(d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
@@ -548,7 +609,16 @@ async function startGame(){
   G={animal,questions:[],qUsed:0,over:false,won:false,diff,cat:cats.length===4?'all':cats.includes('ocean')?'ocean':'land',cats:[...selectedCats]};
   document.getElementById('mystery-emoji').textContent=cats.length===4?'🌍':(EMOJIS[cats[0]]||'🦁');
   document.getElementById('mystery-hint').textContent=cats.length===4?'🌍 Could be any animal':'🔍 Habitat: '+cats.map(c=>({land:'Land',sky:'Sky',ocean:'Ocean',fresh:'Freshwater'}[c])).join(', ');
-  document.getElementById('qa-log').innerHTML='';document.getElementById('main-input').value='';
+  document.getElementById('qa-log').innerHTML='';
+  document.getElementById('qa-split-yes').innerHTML='';
+  document.getElementById('qa-split-no').innerHTML='';
+  document.getElementById('qa-toolbar').style.display='none';
+  document.getElementById('qa-log').classList.remove('hidden');
+  document.getElementById('qa-split').classList.add('hidden');
+  document.getElementById('sort-chrono').classList.add('active');
+  document.getElementById('sort-split').classList.remove('active');
+  qaView='chrono';
+  document.getElementById('main-input').value='';
   updateInputMode();renderQBubbles();renderSuggestions();
   hideAll();show('panel-game');setTimeout(()=>document.getElementById('main-input').focus(),100);
 }
