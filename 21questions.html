@@ -427,6 +427,12 @@ function addQA(q,a,type){
 
 async function processQuestion(question){
   if(G.qUsed>=MAX_Q){endGame(false);return;}
+  // Check if the question is actually a guess (e.g. "is it a panda bear?" or "panda bear?")
+  const stripped=question.replace(/^(is it a?n?\s+|is it\s+)/i,'').replace(/\?$/,'').trim();
+  const an=G.animal.name.toLowerCase().trim();
+  const sn=stripped.toLowerCase().trim();
+  const looksLikeDirectGuess=sn===an||an.includes(sn)||sn.includes(an)||an.split(' ').some(w=>w.length>3&&sn.includes(w));
+  if(looksLikeDirectGuess){await processGuess(stripped);return;}
   const input=document.getElementById('main-input'),btn=document.getElementById('main-btn');
   input.value='';updateInputMode();input.disabled=true;btn.disabled=true;asking=true;
   G.qUsed++;renderQBubbles();
@@ -441,6 +447,19 @@ async function processQuestion(question){
     const type=d.type||(d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
     G.questions.push({q:question,a:d.answer,explanation:d.explanation||'',type});
     addQA(question,d.explanation||'',type);renderSuggestions();
+    // If AI said YES and question names the animal specifically enough, trigger win
+    if(type==='yes'){
+      const ql=question.toLowerCase();
+      const anl=G.animal.name.toLowerCase();
+      // Require most of the animal name to be present in the question
+      const anWords=anl.split(' ').filter(w=>w.length>3);
+      const matchCount=anWords.filter(w=>ql.includes(w)).length;
+      const isSpecificEnough=anWords.length===0||(matchCount>=anWords.length)||(anWords.length===1&&matchCount===1);
+      if(isSpecificEnough&&ql.includes(anl.split(' ').pop())&&(ql.includes('is it')||ql.includes('is this'))){
+        asking=false;input.disabled=false;btn.disabled=false;
+        setTimeout(()=>endGame(true),600);return;
+      }
+    }
     if(G.qUsed>=MAX_Q)setTimeout(()=>endGame(false),800);
   }catch(e){
     document.getElementById('qa-log').removeChild(ph);
@@ -456,10 +475,21 @@ async function processGuess(guess){
   const ph=addQA(`🎯 Guess: "${guess}"`, '', 'thinking');
   try{
     const an=G.animal.name.toLowerCase().trim(),gn=guess.toLowerCase().trim();
-    let correct=an===gn||an.includes(gn)||gn.includes(an)||an.split(' ').some(w=>w.length>4&&gn.includes(w));
-    if(!correct){
-      try{const c=await callAI(`Judge guess in 21Q game. Secret: "${G.animal.name}".`,`Guess: "${guess}". Same animal/alternate name?\nONLY: {"correct":true} or {"correct":false}`);correct=c.correct===true;}catch(_){}
-    }
+    // Only consider it correct if it's a very close match — not just a category word
+    const exactMatch=an===gn;
+    const strongPartial=gn.length>=5&&(an.includes(gn)||gn.includes(an));
+    let correct=exactMatch||strongPartial;
+    // Always use AI to verify — it will reject category-only guesses like "bear" for "Grizzly Bear"
+    try{
+      const c=await callAI(
+        `You are judging a guess in a 21 Questions animal game. The secret animal is "${G.animal.name}".`,
+        `Player guessed: "${guess}".
+Rule: Only mark correct if the guess names THIS SPECIFIC animal or a clear alternate name for it.
+If the guess is only a general category (e.g. "bear" when answer is "Grizzly Bear", "cat" when answer is "Cheetah"), mark it INCORRECT — the player must be more specific.
+Respond ONLY: {"correct":true} or {"correct":false}`
+      );
+      correct=c.correct===true;
+    }catch(_){}
     document.getElementById('qa-log').removeChild(ph);
     if(correct){
       G.questions.push({q:`🎯 Guess: "${guess}"`,a:'Correct!',explanation:"Yes! That's right!",type:'yes'});
@@ -468,8 +498,12 @@ async function processGuess(guess){
       setTimeout(()=>endGame(true),600);
       return;
     }else{
-      G.questions.push({q:`🎯 Guess: "${guess}"`,a:'Not quite!',explanation:'Keep asking questions!',type:'no'});
-      addQA(`🎯 Guess: "${guess}"`,'Not quite — keep asking questions!','no');
+      // Check if it's a category match (partial) — give a hint
+      const an=G.animal.name.toLowerCase().trim(),gn=guess.toLowerCase().trim();
+      const isCategory=an.includes(gn)&&gn.split(' ').length<=2&&gn.length<an.length-2;
+      const msg=isCategory?`Yes, but what kind of ${guess}? Be more specific!`:'Not quite — keep asking questions!';
+      G.questions.push({q:`🎯 Guess: "${guess}"`,a:'Not quite!',explanation:msg,type:'no'});
+      addQA(`🎯 Guess: "${guess}"`,msg,'no');
       if(G.qUsed>=MAX_Q)setTimeout(()=>endGame(false),800);
     }
   }catch(e){
