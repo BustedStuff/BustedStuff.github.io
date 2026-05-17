@@ -522,7 +522,6 @@ async function startGame(){
 async function endGame(won){
   G.over=true;G.won=won;hideAll();
   const a=G.animal,score=won?Math.max(1,22-G.qUsed):0;
-  const img=await getAnimalImg(a.name,a.wiki);
   const emoji=document.getElementById('mystery-emoji')?.textContent||'🐾';
   function makeLog(id){
     const el=document.getElementById(id);el.innerHTML='';
@@ -537,26 +536,38 @@ async function endGame(won){
     document.getElementById('win-qs').innerHTML=`Got it in <span style="color:var(--accent);font-weight:900">${G.qUsed}</span> turn${G.qUsed!==1?'s':''}! Score: <span style="color:var(--accent);font-weight:900">${score}</span>`;
     document.getElementById('win-animal-name').textContent=a.name;
     document.getElementById('win-sci-name').textContent=a.scientific_name||'';
-    document.getElementById('win-img-wrap').innerHTML=img?`<img src="${img}" class="win-animal-img" alt="${a.name}" onerror="this.style.display='none'">`:`<div class="win-animal-placeholder">${emoji}</div>`;
+    document.getElementById('win-img-wrap').innerHTML=`<div class="win-animal-placeholder">${emoji}</div>`;
     const fd=document.getElementById('win-facts');
     fd.innerHTML='<div style="text-align:center;font-size:13px;color:var(--text3);font-weight:700;padding:6px 0">Loading fun facts…</div>';
-    show('panel-result-win');launchConfetti();
-    try{
-      const d=await callAI('Wildlife expert giving fun facts for a children\'s game.',`2 interesting family-friendly facts about the ${a.name}. One vivid sentence each.\nONLY: {"fact1":"...","fact2":"..."}`);
-      fd.innerHTML='';[d.fact1,d.fact2].filter(Boolean).forEach((f,i)=>{
-        const div=document.createElement('div');div.className='win-fact';
-        div.innerHTML=`<span class="win-fact-icon">${['🌟','💫'][i]||'✨'}</span><span class="win-fact-text">${f}</span>`;fd.appendChild(div);
-      });
-    }catch(e){fd.innerHTML=a.fun_fact?`<div class="win-fact"><span class="win-fact-icon">🌟</span><span class="win-fact-text">${a.fun_fact}</span></div>`:'';}
     makeLog('win-qa');
+    show('panel-result-win');
+    launchConfetti();
+    leaderboard.unshift({animal:a.name,diff:G.diff,cat:G.cat,won,score,qs:G.qUsed,ts:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+    if(leaderboard.length>20)leaderboard.pop();
+    getAnimalImg(a.name,a.wiki).then(img=>{
+      if(img) document.getElementById('win-img-wrap').innerHTML=`<img src="${img}" class="win-animal-img" alt="${a.name}" onerror="this.style.display='none'">`;
+    });
+    callAI('Wildlife expert giving fun facts for a children\'s game.',`2 interesting family-friendly facts about the ${a.name}. One vivid sentence each.\nONLY: {"fact1":"...","fact2":"..."}`)
+      .then(d=>{
+        fd.innerHTML='';
+        [d.fact1,d.fact2].filter(Boolean).forEach((f,i)=>{
+          const div=document.createElement('div');div.className='win-fact';
+          div.innerHTML=`<span class="win-fact-icon">${['🌟','💫'][i]||'✨'}</span><span class="win-fact-text">${f}</span>`;
+          fd.appendChild(div);
+        });
+      }).catch(()=>{fd.innerHTML=a.fun_fact?`<div class="win-fact"><span class="win-fact-icon">🌟</span><span class="win-fact-text">${a.fun_fact}</span></div>`:''});
   }else{
     document.getElementById('lose-animal-name').textContent=a.name;
     document.getElementById('lose-sci-name').textContent=a.scientific_name||'';
-    document.getElementById('lose-img-wrap').innerHTML=img?`<img src="${img}" class="lose-animal-img" alt="${a.name}" onerror="this.style.display='none'">`:`<div class="lose-animal-placeholder">${emoji}</div>`;
-    makeLog('lose-qa');show('panel-result-lose');
+    document.getElementById('lose-img-wrap').innerHTML=`<div class="lose-animal-placeholder">${emoji}</div>`;
+    makeLog('lose-qa');
+    show('panel-result-lose');
+    leaderboard.unshift({animal:a.name,diff:G.diff,cat:G.cat,won,score,qs:G.qUsed,ts:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+    if(leaderboard.length>20)leaderboard.pop();
+    getAnimalImg(a.name,a.wiki).then(img=>{
+      if(img) document.getElementById('lose-img-wrap').innerHTML=`<img src="${img}" class="lose-animal-img" alt="${a.name}" onerror="this.style.display='none'">`;
+    });
   }
-  leaderboard.unshift({animal:a.name,diff:G.diff,cat:G.cat,won,score,qs:G.qUsed,ts:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
-  if(leaderboard.length>20)leaderboard.pop();
 }
 
 function launchConfetti(){
