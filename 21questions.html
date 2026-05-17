@@ -434,8 +434,8 @@ async function processQuestion(question){
   try{
     const ctx=G.questions.map((q,i)=>`Q${i+1}: ${q.q} → ${q.a}`).join('\n');
     const d=await callAI(
-      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}). Answer accurately. NEVER reveal the animal name. Answer "yes","no","sometimes" only. Explanation blank unless genuinely ambiguous. Never give hints.`,
-      `Secret: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nRespond ONLY: {"answer":"yes","explanation":"","type":"yes"}`
+      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}). RULES: Answer ONLY "yes" or "no". The explanation field MUST always be empty string "". Never add any text, context, reasoning, or clarification. Not even one extra word. Just yes or no.`,
+      `Secret: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nRespond ONLY with this exact JSON, explanation must always be empty: {"answer":"yes","explanation":"","type":"yes"}`
     );
     document.getElementById('qa-log').removeChild(ph);
     const type=d.type||(d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
@@ -519,7 +519,9 @@ async function startGame(){
   hideAll();show('panel-game');setTimeout(()=>document.getElementById('main-input').focus(),100);
 }
 
-async function endGame(won){
+/* v5 */
+function endGame(won){
+  if(G._endCalled)return; G._endCalled=true;
   G.over=true;G.won=won;hideAll();
   const a=G.animal,score=won?Math.max(1,22-G.qUsed):0;
   const emoji=document.getElementById('mystery-emoji')?.textContent||'🐾';
