@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21 Questions — Animals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f0f9ff; --surface: #ffffff; --surface2: #e8f4fd;
+  --border: #bce0f7; --text: #1a3a52; --text2: #4a7a9b; --text3: #8ab4cc;
+  --accent: #ff6b35; --accent2: #e55a26;
+  --green: #22c55e; --green-bg: #dcfce7; --green-border: #86efac;
+  --red: #ef4444; --red-bg: #fee2e2; --red-border: #fca5a5;
+  --yellow: #f59e0b; --yellow-bg: #fef3c7; --yellow-border: #fcd34d;
+  --blue: #3b82f6; --blue-bg: #dbeafe; --blue-border: #93c5fd;
+  --purple: #8b5cf6; --purple-bg: #ede9fe; --purple-border: #c4b5fd;
+  --ocean: #06b6d4; --ocean-bg: #cffafe;
+}
+body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-serif; min-height: 100vh; overflow-x: hidden; }
+#stripe-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.header, .main { position: relative; z-index: 1; }
+
+.header { background: rgba(10,10,8,.82); backdrop-filter: blur(12px); border-bottom: 2px solid rgba(255,255,255,.08); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+.logo span { color: #fde68a; }
+.mode-badge { font-size: 12px; padding: 4px 12px; border-radius: 999px; font-weight: 700; background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+.mode-badge.ai { background: rgba(34,197,94,.3); border-color: rgba(34,197,94,.5); }
+
+.main { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.card { background: rgba(255,255,255,.93); backdrop-filter: blur(8px); border: 2px solid rgba(255,255,255,.5); border-radius: 24px; padding: 22px; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.tab { flex: 1; padding: 10px; font-size: 14px; font-family: 'Nunito', sans-serif; font-weight: 800; border: 2px solid rgba(255,255,255,.3); border-radius: 16px; background: rgba(255,255,255,.15); color: #fff; cursor: pointer; transition: all .15s; text-align: center; backdrop-filter: blur(4px); }
+.tab.active { background: linear-gradient(135deg, #0ea5e9, #6366f1); border-color: transparent; box-shadow: 0 4px 14px rgba(99,102,241,.4); }
+
+/* ── DIFFICULTY ── */
+.diff-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.diff-btn { flex: 1; padding: 10px 8px; font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 800; border: 2px solid var(--border); border-radius: 14px; background: white; color: var(--text2); cursor: pointer; transition: all .15s; text-align: center; }
+.diff-btn.active.easy { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+.diff-btn.active.medium { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow-border); }
+.diff-btn.active.hard { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+.diff-hint { font-size: 13px; color: var(--text2); margin-bottom: 16px; text-align: center; }
+
+/* ── HABITAT MULTI-SELECT ── */
+.cat-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.cat-btn { flex: 1; padding: 10px 6px; font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 800; border: 2px solid var(--border); border-radius: 14px; background: white; color: var(--text2); cursor: pointer; transition: all .15s; text-align: center; user-select: none; }
+.cat-btn[data-cat="land"].active  { background: var(--green-bg);  color: var(--green);  border-color: var(--green-border); }
+.cat-btn[data-cat="sky"].active   { background: var(--blue-bg);   color: var(--blue);   border-color: var(--blue-border); }
+.cat-btn[data-cat="ocean"].active { background: var(--ocean-bg);  color: var(--ocean);  border-color: var(--ocean); }
+.cat-btn[data-cat="fresh"].active { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border); }
+.cat-hint { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 14px; font-weight: 700; min-height: 18px; }
+.cat-label { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+.btn-start { width: 100%; padding: 16px; font-size: 18px; font-family: 'Nunito', sans-serif; font-weight: 900; background: linear-gradient(135deg, #ff6b35, #f59e0b); color: white; border: none; border-radius: 18px; cursor: pointer; transition: all .15s; box-shadow: 0 6px 20px rgba(255,107,53,.35); }
+.btn-start:hover { transform: translateY(-1px); }
+.btn-start:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-play-again { padding: 12px 32px; font-size: 15px; font-family: 'Nunito', sans-serif; font-weight: 800; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; border: none; border-radius: 14px; cursor: pointer; transition: all .15s; box-shadow: 0 4px 14px rgba(99,102,241,.3); }
+.btn-play-again:hover { transform: translateY(-1px); }
+.btn-sm { padding: 6px 14px; font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 700; background: white; color: var(--text2); border: 2px solid var(--border); border-radius: 10px; cursor: pointer; }
+
+/* ── MYSTERY CARD ── */
+.mystery-card { text-align: center; padding: 16px 0 8px; }
+.mystery-emoji { font-size: 60px; line-height: 1; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.mystery-title { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+.mystery-sub { font-size: 13px; color: var(--text2); font-weight: 600; }
+
+/* ── Q COUNTER ── */
+.q-counter { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 10px; }
+.q-label { font-size: 13px; font-weight: 800; color: var(--text2); }
+.q-bubbles { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+.q-bubble { width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--border); background: white; transition: all .2s; }
+.q-bubble.used { background: var(--accent); border-color: var(--accent2); }
+.q-bubble.used.last5 { background: var(--red); border-color: #dc2626; }
+
+/* ── SUGGEST CHIPS ── */
+.suggest-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 0; }
+.suggest-chip { padding: 5px 12px; font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 700; background: var(--surface2); color: var(--text2); border: 2px solid var(--border); border-radius: 999px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.suggest-chip:hover { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-border); }
+
+/* ── UNIFIED INPUT ── */
+.unified-input-wrap { display: flex; gap: 8px; margin-top: 4px; }
+.unified-input { flex: 1; padding: 14px 18px; font-size: 15px; font-family: 'Nunito', sans-serif; font-weight: 600; background: var(--surface2); color: var(--text); border: 2px solid var(--border); border-radius: 16px; outline: none; transition: all .15s; }
+.unified-input:focus { border-color: var(--blue); background: white; }
+.unified-input::placeholder { color: var(--text3); font-weight: 600; }
+.unified-input.guess-mode { border-color: var(--accent); background: #fff8f5; }
+.unified-btn { display: flex; align-items: center; gap: 6px; padding: 14px 18px; font-size: 14px; font-family: 'Nunito', sans-serif; font-weight: 800; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; border: none; border-radius: 16px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.unified-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,.35); }
+.unified-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.unified-btn.guess-mode { background: linear-gradient(135deg, #ff6b35, #f59e0b); }
+.input-hint { font-size: 12px; color: var(--text3); font-weight: 700; text-align: center; margin-top: 6px; margin-bottom: 2px; height: 18px; }
+
+/* ── Q&A LOG ── */
+.qa-log { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+.qa-item { border-radius: 14px; padding: 10px 14px; font-size: 14px; font-weight: 700; border: 2px solid; }
+.qa-item.yes { background: var(--green-bg); border-color: var(--green-border); color: #15803d; }
+.qa-item.no { background: var(--red-bg); border-color: var(--red-border); color: #b91c1c; }
+.qa-item.maybe { background: var(--yellow-bg); border-color: var(--yellow-border); color: #92400e; }
+.qa-item.thinking { background: var(--blue-bg); border-color: var(--blue-border); color: #1d4ed8; }
+.qa-q { font-size: 13px; color: var(--text2); margin-bottom: 3px; font-weight: 700; }
+.qa-a { font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.qa-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.yes .qa-badge { background: var(--green); color: white; }
+.no .qa-badge { background: var(--red); color: white; }
+.maybe .qa-badge { background: var(--yellow); color: white; }
+
+/* ── LOADING ── */
+.loading { text-align: center; padding: 32px; color: var(--text2); font-weight: 700; }
+.spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -5px; margin-right: 8px; }
+.spinner-sm { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESULT ── */
+.result-hero { text-align: center; padding: 8px 0 14px; }
+.result-animal-img { width: 120px; height: 120px; border-radius: 20px; object-fit: cover; border: 4px solid var(--border); margin-bottom: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.result-animal-placeholder { width: 120px; height: 120px; border-radius: 20px; background: var(--surface2); border: 4px solid var(--border); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 56px; }
+.result-title { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+.result-title.win { color: var(--green); }
+.result-title.lose { color: var(--red); }
+.result-detail { font-size: 15px; color: var(--text2); font-weight: 700; margin-bottom: 4px; }
+.result-qs { font-size: 13px; color: var(--text3); font-weight: 700; }
+.result-qs span { color: var(--accent); font-weight: 900; }
+.hint-pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; margin: 2px; }
+.hint-pill.habitat { background: var(--ocean-bg); color: var(--ocean); }
+
+/* ── LEADERBOARD ── */
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 2px solid var(--border); font-size: 13px; font-weight: 700; }
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { font-size: 16px; min-width: 24px; text-align: center; }
+.lb-animal { flex: 1; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-meta { color: var(--text2); white-space: nowrap; }
+.lb-badge { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 800; }
+.lb-badge.win { background: var(--green-bg); color: var(--green); border: 2px solid var(--green-border); }
+.lb-badge.lose { background: var(--red-bg); color: var(--red); border: 2px solid var(--red-border); }
+.lb-score { font-weight: 900; color: var(--accent); min-width: 26px; text-align: right; font-size: 15px; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat-box { background: rgba(255,255,255,.9); border: 2px solid var(--border); border-radius: 16px; padding: 14px; text-align: center; }
+.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; font-weight: 800; }
+.stat-value { font-size: 32px; font-weight: 900; color: var(--accent); line-height: 1; }
+.qa-explanation { font-size: 12px; font-weight: 600; opacity: 0.75; font-style: italic; }
+/* ── WIN CARD ── */
+.result-card-win { border-color: var(--green-border); background: linear-gradient(160deg, #f0fdf4 0%, #ffffff 60%); overflow: hidden; position: relative; }
+.win-burst { position: absolute; top: -18px; right: -14px; font-size: 72px; opacity: .18; pointer-events: none; animation: spin-slow 8s linear infinite; }
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.win-headline { font-size: 30px; font-weight: 900; color: var(--green); letter-spacing: -0.5px; }
+.win-animal-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0 10px; }
+.win-animal-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 5px solid var(--green); box-shadow: 0 0 0 4px var(--green-bg), 0 8px 32px rgba(34,197,94,.35); margin-bottom: 10px; animation: pop-in .5s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes pop-in { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.win-animal-placeholder { width: 140px; height: 140px; border-radius: 50%; background: var(--green-bg); border: 5px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 64px; margin-bottom: 10px; animation: pop-in .5s cubic-bezier(.34,1.56,.64,1) both; }
+.win-animal-name { font-size: 22px; font-weight: 900; color: var(--text); }
+.win-sci-name { font-size: 13px; color: var(--text3); font-style: italic; font-weight: 600; margin-top: 2px; }
+.win-facts { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 4px; }
+.win-fact { display: flex; gap: 10px; align-items: flex-start; background: var(--green-bg); border: 2px solid var(--green-border); border-radius: 14px; padding: 11px 14px; animation: slide-up .4s ease both; }
+.win-fact:nth-child(2) { animation-delay: .12s; }
+@keyframes slide-up { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.win-fact-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.win-fact-text { font-size: 14px; font-weight: 700; color: #15803d; line-height: 1.4; }
+
+/* ── LOSE CARD ── */
+.result-card-lose { border-color: #d1d5db; background: linear-gradient(160deg, #f9fafb 0%, #ffffff 60%); }
+.lose-headline { font-size: 26px; font-weight: 900; color: #6b7280; }
+.lose-sub { font-size: 14px; color: var(--text3); font-weight: 700; margin-top: 4px; }
+.lose-animal-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0 10px; }
+.lose-animal-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #d1d5db; box-shadow: 0 4px 16px rgba(0,0,0,.1); margin-bottom: 10px; filter: grayscale(30%); }
+.lose-animal-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #f3f4f6; border: 4px solid #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 56px; margin-bottom: 10px; filter: grayscale(40%); }
+.lose-animal-name { font-size: 20px; font-weight: 900; color: #4b5563; }
+.lose-sci-name { font-size: 13px; color: var(--text3); font-style: italic; font-weight: 600; margin-top: 2px; }
+.btn-try-again { background: linear-gradient(135deg, #6b7280, #9ca3af) !important; box-shadow: none !important; }
+
+.qa-section-label { font-size: 12px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin: 14px 0 10px; text-align: center; border-top: 2px solid var(--border); padding-top: 14px; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="stripe-canvas"></canvas>
+
+<div class="header">
+  <div>
+    <div class="logo">🐾 <span>21</span> Questions</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.6);font-weight:700;margin-top:2px;">Animal Kingdom Edition</div>
+  </div>
+  <span id="mode-indicator" class="mode-badge">Classic</span>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('game')">🎮 Play</button>
+    <button class="tab" onclick="switchTab('lb')">🏆 Scores</button>
+  </div>
+
+  <!-- SETUP -->
+  <div id="panel-setup" class="card">
+    <div class="cat-label">Habitat — pick one or more</div>
+    <div class="cat-row">
+      <button class="cat-btn active" data-cat="land"  onclick="toggleCat('land')">🌿 Land</button>
+      <button class="cat-btn active" data-cat="sky"   onclick="toggleCat('sky')">🦅 Sky</button>
+      <button class="cat-btn active" data-cat="ocean" onclick="toggleCat('ocean')">🌊 Ocean</button>
+      <button class="cat-btn active" data-cat="fresh" onclick="toggleCat('fresh')">🏞️ Fresh</button>
+    </div>
+    <div class="cat-hint" id="cat-hint">All habitats selected</div>
+    <div class="cat-label">Difficulty</div>
+    <div class="diff-row">
+      <button class="diff-btn easy active" data-diff="easy"   onclick="setDiff('easy')">😊 Easy</button>
+      <button class="diff-btn medium"      data-diff="medium" onclick="setDiff('medium')">🤔 Medium</button>
+      <button class="diff-btn hard"        data-diff="hard"   onclick="setDiff('hard')">🔥 Hard</button>
+    </div>
+    <div class="diff-hint" id="diff-hint">Easy: common animals everyone knows — lions, sharks, eagles…</div>
+    <button class="btn-start" id="start-btn" onclick="startGame()">🔍 Start Guessing!</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="panel-loading" class="card hidden">
+    <div class="loading"><span class="spinner"></span><span id="loading-msg">Picking a mystery animal…</span></div>
+  </div>
+
+  <!-- GAME -->
+  <div id="panel-game" class="hidden">
+    <div class="card">
+      <div class="mystery-card">
+        <div class="mystery-emoji" id="mystery-emoji">🔮</div>
+        <div class="mystery-title">Mystery Animal</div>
+        <div class="mystery-sub" id="mystery-hint"></div>
+      </div>
+
+      <div class="q-counter">
+        <div class="q-label">Turns left: <strong id="q-left">21</strong></div>
+        <div class="q-bubbles" id="q-bubbles"></div>
+      </div>
+
+      <div class="suggest-row" id="suggest-row"></div>
+
+      <div class="unified-input-wrap">
+        <input type="text" class="unified-input" id="main-input"
+          placeholder="Ask a question or name the animal…"
+          autocomplete="off"
+          oninput="updateInputMode()"
+          onkeydown="if(event.key==='Enter'&&!asking)handleInput()" />
+        <button class="unified-btn" id="main-btn" onclick="handleInput()">
+          <span id="btn-icon">❓</span><span id="btn-label">Ask</span>
+        </button>
+      </div>
+      <div class="input-hint" id="input-hint">Type a yes/no question <em>or</em> your guess for the animal</div>
+
+      <div class="qa-log" id="qa-log"></div>
+    </div>
+  </div>
+
+  <!-- CONFETTI CANVAS (win only) -->
+  <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none;"></canvas>
+
+  <!-- RESULT WIN -->
+  <div id="panel-result-win" class="card hidden result-card-win">
+    <div class="win-burst" id="win-burst">🎉</div>
+    <div style="text-align:center;padding:8px 0 4px;">
+      <div class="win-headline">You got it!</div>
+      <div class="result-qs" id="win-qs"></div>
+    </div>
+    <div class="win-animal-wrap">
+      <div id="win-img-wrap"></div>
+      <div class="win-animal-name" id="win-animal-name"></div>
+      <div class="win-sci-name" id="win-sci-name"></div>
+    </div>
+    <div class="win-facts" id="win-facts"></div>
+    <div class="qa-section-label">Your questions</div>
+    <div id="win-qa" class="qa-log" style="max-height:220px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn-play-again" onclick="resetGame()">🔄 Play Again</button>
+    </div>
+  </div>
+
+  <!-- RESULT LOSE -->
+  <div id="panel-result-lose" class="card hidden result-card-lose">
+    <div style="text-align:center;padding:10px 0 4px;">
+      <div class="lose-headline">Out of turns…</div>
+      <div class="lose-sub">The animal was:</div>
+    </div>
+    <div class="lose-animal-wrap">
+      <div id="lose-img-wrap"></div>
+      <div class="lose-animal-name" id="lose-animal-name"></div>
+      <div class="lose-sci-name" id="lose-sci-name"></div>
+    </div>
+    <div class="qa-section-label">Your questions</div>
+    <div id="lose-qa" class="qa-log" style="max-height:220px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn-play-again btn-try-again" onclick="resetGame()">🔄 Try again</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div id="tab-lb" class="hidden">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <span style="font-size:20px;font-weight:900;color:var(--text);">🏆 High Scores</span>
+        <button class="btn-sm" onclick="clearLB()">Clear</button>
+      </div>
+      <div id="lb-body"><div style="font-size:14px;color:var(--text3);text-align:center;padding:1.5rem 0;font-weight:700;">No games yet!</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-label">Played</div><div class="stat-value" id="stat-played">0</div></div>
+      <div class="stat-box"><div class="stat-label">Win %</div><div class="stat-value" id="stat-wr">—</div></div>
+      <div class="stat-box"><div class="stat-label">Best</div><div class="stat-value" id="stat-best">—</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const WORKER_URL = 'https://hidden-limit-f2ce.nsaund85.workers.dev';
+const AI_ENABLED = !!WORKER_URL;
+document.getElementById('mode-indicator').textContent = AI_ENABLED ? '✓ AI mode' : 'Classic';
+if (AI_ENABLED) document.getElementById('mode-indicator').className = 'mode-badge ai';
+
+// ── STRIPE BACKGROUND ─────────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('stripe-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Each stripe pattern: name, base color, stripe color, angle, width, gap, speed
+  const PATTERNS = [
+    { name:'zebra',   bg:'#f5f0e8', stripe:'#1a1a1a', angle:30,  w:18, gap:18, speed:0.18 },
+    { name:'tiger',   bg:'#c8780a', stripe:'#1a0a00', angle:-25, w:22, gap:28, speed:0.14 },
+    { name:'skunk',   bg:'#111111', stripe:'#ffffff', angle:0,   w:14, gap:40, speed:0.10 },
+    { name:'raccoon', bg:'#8a8a8a', stripe:'#2a2a2a', angle:15,  w:10, gap:20, speed:0.20 },
+    { name:'bumblebee',bg:'#f5c800',stripe:'#1a1a1a', angle:-10, w:16, gap:16, speed:0.22 },
+    { name:'coral',   bg:'#e05050', stripe:'#fff',    angle:45,  w:8,  gap:24, speed:0.12 },
+    { name:'zebra2',  bg:'#e8e8e8', stripe:'#222',    angle:60,  w:12, gap:12, speed:0.16 },
+  ];
+
+  // Panels that scroll across the screen
+  const PANEL_W = 320; // px width of each pattern panel
+  let panels = [];
+  let offset = 0;
+  let lastTime = 0;
+  let resized = false;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    buildPanels();
+    resized = true;
+  }
+
+  function buildPanels() {
+    panels = [];
+    const count = Math.ceil(canvas.width / PANEL_W) + 3;
+    for (let i = 0; i < count; i++) {
+      panels.push(PATTERNS[i % PATTERNS.length]);
+    }
+  }
+
+  function drawStripes(ctx, x, y, w, h, pattern, scrollOffset) {
+    ctx.save();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    // background
+    ctx.fillStyle = pattern.bg;
+    ctx.fillRect(x, y, w, h);
+    // stripes
+    ctx.fillStyle = pattern.stripe;
+    const angleRad = pattern.angle * Math.PI / 180;
+    const total = pattern.w + pattern.gap;
+    // draw many diagonal lines
+    const diagLen = Math.hypot(w, h) * 2 + total * 2;
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.rotate(angleRad);
+    const startI = Math.floor(-diagLen / 2 / total) - 1;
+    const endI   = Math.ceil(diagLen / 2 / total) + 1;
+    const phase  = (scrollOffset * pattern.speed) % total;
+    for (let i = startI; i <= endI; i++) {
+      const stripeX = i * total - phase;
+      ctx.fillRect(stripeX, -diagLen / 2, pattern.w, diagLen);
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawDivider(ctx, x, h) {
+    // Organic wavy divider between panels
+    const grad = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.5, 'rgba(0,0,0,0.35)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(x - 12, 0);
+    // wavy edge
+    const steps = Math.ceil(h / 20);
+    for (let i = 0; i <= steps; i++) {
+      const yy = (i / steps) * h;
+      const wave = Math.sin(i * 0.7 + offset * 0.008) * 7;
+      ctx.lineTo(x + wave, yy);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const yy = (i / steps) * h;
+      const wave = Math.sin(i * 0.7 + offset * 0.008) * 7;
+      ctx.lineTo(x + wave + 24, yy);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function frame(ts) {
+    const dt = ts - lastTime;
+    lastTime = ts;
+    if (!resized && dt > 200) { requestAnimationFrame(frame); return; }
+    resized = false;
+
+    offset += dt * 0.04; // scroll speed
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Cycle panels — remove left ones that scroll off, add right ones
+    const panelOffset = (offset % PANEL_W);
+
+    for (let i = 0; i < panels.length; i++) {
+      const px = i * PANEL_W - panelOffset;
+      if (px + PANEL_W < -PANEL_W * 2 || px > w + PANEL_W) continue;
+      drawStripes(ctx, px, 0, PANEL_W, h, panels[i], offset + i * 37);
+      if (i < panels.length - 1) drawDivider(ctx, px + PANEL_W, h);
+    }
+
+    // Recycle: when the first panel scrolls fully left, rotate
+    if (panelOffset > PANEL_W - 1) {
+      panels.push(panels.shift());
+    }
+
+    // Dark overlay so content remains readable
+    const overlay = ctx.createLinearGradient(0, 0, 0, h);
+    overlay.addColorStop(0, 'rgba(15,12,8,0.55)');
+    overlay.addColorStop(1, 'rgba(15,12,8,0.55)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, w, h);
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+})();
+
+// ── AI CALL ───────────────────────────────────────────────────────────────────
+async function callAI(systemPrompt, userPrompt, maxTokens=600) {
+  if (!AI_ENABLED) throw new Error('No worker');
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  if (!res.ok) throw new Error(`Worker ${res.status}`);
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const m = text.match(/\{[\s\S]*?\}/);
+  if (!m) throw new Error('No JSON');
+  return JSON.parse(m[0]);
+}
+
+// ── WIKIPEDIA IMAGE ───────────────────────────────────────────────────────────
+const imgCache = {};
+async function fetchWikiImg(title) {
+  if (!title) return null;
+  if (imgCache[title] !== undefined) return imgCache[title];
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=400&origin=*`;
+    const r = await fetch(url);
+    if (!r.ok) { imgCache[title] = null; return null; }
+    const d = await r.json();
+    const pages = d.query?.pages || {};
+    const page = Object.values(pages)[0];
+    if (page?.missing !== undefined) { imgCache[title] = null; return null; }
+    const src = page?.thumbnail?.source || null;
+    imgCache[title] = src; return src;
+  } catch { imgCache[title] = null; return null; }
+}
+async function getAnimalImg(name, wikiTitle) {
+  if (wikiTitle) { const r = await fetchWikiImg(wikiTitle); if (r) return r; }
+  const r = await fetchWikiImg(name.trim().replace(/ /g,'_')); if (r) return r;
+  const parts = name.trim().split(' ');
+  if (parts.length > 1) return fetchWikiImg(parts[parts.length-1]);
+  return null;
+}
+
+// ── STATIC FALLBACK ANIMALS ───────────────────────────────────────────────────
+const STATIC = {
+  easy: {
+    land:  ['Lion','Tiger','Elephant','Giraffe','Zebra','Kangaroo','Polar Bear','Cheetah','Gorilla','Koala','Panda','Wolf','Fox','Rabbit','Horse','Cow','Crocodile','Flamingo'],
+    sky:   ['Eagle','Peacock','Parrot','Owl','Penguin','Flamingo','Toucan','Hummingbird','Pelican','Swan','Albatross','Hawk','Robin','Ostrich','Crane'],
+    ocean: ['Dolphin','Great White Shark','Blue Whale','Octopus','Clownfish','Sea Turtle','Starfish','Jellyfish','Lobster','Crab','Seal','Sea Horse','Manta Ray','Orca','Hammerhead Shark'],
+    fresh: ['Salmon','Trout','Catfish','Bass','Beaver','Otter','Frog','Alligator','Piranha','Carp','Tilapia','Pike','Perch','Snapping Turtle','Heron']
+  },
+  medium: {
+    land:  ['Pangolin','Axolotl','Komodo Dragon','Platypus','Chameleon','Meerkat','Tapir','Capybara','Aye-Aye','Sun Bear','Basilisk Lizard','Binturong','Fossa','Numbat','Aardvark'],
+    sky:   ['Secretary Bird','Shoebill','Kakapo','Cassowary','Kiwi','Harpy Eagle','Lyrebird','Hoatzin','Frigate Bird','Roadrunner','Booby','Marabou Stork','Sunbittern','Potoo','Kookaburra'],
+    ocean: ['Narwhal','Mantis Shrimp','Blobfish','Anglerfish','Dumbo Octopus','Barreleye Fish','Giant Squid','Pistol Shrimp','Mimic Octopus','Sea Pig','Vampire Squid','Leafy Sea Dragon'],
+    fresh: ['Axolotl','Giant River Otter','Arapaima','Electric Eel','Freshwater Stingray','Chinese Giant Salamander','Platypus','Hippopotamus','Amazon River Dolphin','Lungfish']
+  },
+  hard: {
+    land:  ['Saiga Antelope','Olm','Gerenuk','Tarsier','Naked Mole Rat','Glass Frog','Patagonian Mara','Long-eared Jerboa','Streaked Tenrec','Malayan Tapir','Fossa','Banded Linsang'],
+    sky:   ['Kakapo','Long-wattled Umbrellabird','Cock-of-the-Rock','Philippine Eagle','Hooded Pitohui','Kagu','Plains-wanderer','Night Parrot','Marvelous Spatuletail','Lyre-tailed Honeyguide'],
+    ocean: ['Irrawaddy Dolphin','Goblin Shark','Hagfish','Frilled Shark','Greenland Shark','Barreleye Fish','Oarfish','Sarcastic Fringehead','Hydrothermal Vent Crab','Yeti Crab'],
+    fresh: ['Olm','Yangtze Finless Porpoise','Giant Softshell Turtle','Mekong Giant Catfish','Purple Frog','Ganges River Dolphin','Titicaca Water Frog','Cave Fish','Iridescent Shark']
+  }
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const MAX_Q = 21;
+let G = null, leaderboard = [], asking = false;
+let selectedDiff = 'easy';
+let selectedCats = new Set(['land','sky','ocean','fresh']);
+
+const DIFF_HINTS = {
+  easy:   'Easy: common animals everyone knows — lions, sharks, eagles…',
+  medium: 'Medium: less common species — pangolins, narwhals, axolotls…',
+  hard:   'Hard: rare and obscure species from all over the world'
+};
+const EMOJIS = { land:'🐘', sky:'🦅', ocean:'🐬', fresh:'🐟', all:'🌍' };
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.textContent.includes(t==='game'?'Play':'Score')));
+  ['panel-setup','panel-loading','panel-game','panel-result'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('tab-lb').classList.toggle('hidden', t !== 'lb');
+  if (t === 'game') {
+    if (!G) show('panel-setup');
+    else if (G.over && G.won) show('panel-result-win');
+    else if (G.over && !G.won) show('panel-result-lose');
+    else show('panel-game');
+  }
+  if (t === 'lb') renderLB();
+}
+
+function setDiff(d) {
+  selectedDiff = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
+  document.getElementById('diff-hint').textContent = DIFF_HINTS[d];
+}
+
+function toggleCat(c) {
+  if (selectedCats.has(c)) {
+    if (selectedCats.size === 1) return; // must keep at least one
+    selectedCats.delete(c);
+  } else {
+    selectedCats.add(c);
+  }
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', selectedCats.has(b.dataset.cat)));
+  updateCatHint();
+}
+
+function updateCatHint() {
+  const labels = { land:'Land', sky:'Sky', ocean:'Ocean', fresh:'Freshwater' };
+  const sel = ['land','sky','ocean','fresh'].filter(c => selectedCats.has(c));
+  document.getElementById('cat-hint').textContent = sel.length === 4 ? 'All habitats selected'
+    : 'Selected: ' + sel.map(c => labels[c]).join(', ');
+}
+
+function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
+function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
+function hideAll() { ['panel-setup','panel-loading','panel-game','panel-result-win','panel-result-lose'].forEach(hide); }
+
+function renderQBubbles() {
+  const wrap = document.getElementById('q-bubbles');
+  wrap.innerHTML = '';
+  for (let i = 0; i < MAX_Q; i++) {
+    const b = document.createElement('div');
+    const isLast5 = G.qUsed >= 17 && i < G.qUsed;
+    b.className = 'q-bubble' + (i < G.qUsed ? ' used' + (isLast5 ? ' last5' : '') : '');
+    wrap.appendChild(b);
+  }
+  document.getElementById('q-left').textContent = MAX_Q - G.qUsed;
+}
+
+// ── SUGGEST CHIPS ─────────────────────────────────────────────────────────────
+const SUGGESTION_BANKS = [
+  ['Is it a mammal?','Is it a bird?','Is it a fish?','Is it a reptile?','Is it an insect?','Is it an amphibian?'],
+  ['Does it live in water?','Does it live in the ocean?','Does it live in a jungle?','Does it live in the desert?','Does it live in the Arctic?','Does it live in Africa?','Does it live in Australia?'],
+  ['Is it bigger than a dog?','Is it smaller than a cat?','Is it taller than a person?','Is it bigger than a car?','Is it smaller than your hand?','Is it about the size of a horse?'],
+  ['Does it have four legs?','Does it have any legs?','Does it have a tail?','Does it have wings?','Does it have fur?','Does it have feathers?','Does it have scales?','Does it have a shell?','Does it have a trunk?','Does it have horns?'],
+  ['Can it fly?','Can it swim?','Does it hop?','Does it slither?','Does it climb trees?','Is it nocturnal?','Does it hibernate?','Does it migrate?','Is it fast?'],
+  ['Does it eat meat?','Is it a herbivore?','Does it eat fish?','Does it eat insects?','Is it an omnivore?'],
+  ['Does it give live birth?','Does it lay eggs?','Does it have a pouch?','Does it live in groups?','Is it dangerous to humans?','Is it kept as a pet?'],
+];
+
+function renderSuggestions() {
+  const row = document.getElementById('suggest-row');
+  if (!row) return;
+  row.innerHTML = '';
+  const bankIdx = Math.min(Math.floor(G.qUsed / 3), SUGGESTION_BANKS.length - 1);
+  const bank = SUGGESTION_BANKS[bankIdx];
+  const asked = new Set(G.questions.map(q => q.q.toLowerCase()));
+  const picks = bank.filter(s => !asked.has(s.toLowerCase())).sort(() => Math.random() - 0.5).slice(0, 4);
+  picks.forEach(text => {
+    const chip = document.createElement('button');
+    chip.className = 'suggest-chip';
+    chip.textContent = text;
+    chip.onclick = () => {
+      document.getElementById('main-input').value = text;
+      updateInputMode();
+      document.getElementById('main-input').focus();
+    };
+    row.appendChild(chip);
+  });
+}
+
+// ── UNIFIED INPUT MODE DETECTION ──────────────────────────────────────────────
+function detectInputMode(text) {
+  if (!text || !text.trim()) return 'question';
+  const t = text.trim().toLowerCase();
+  const hasQuestion = t.includes('?') ||
+    /^(is |does |do |can |has |are |will |would |could |did |was |were |have )/.test(t);
+  const wordCount = t.split(/\s+/).filter(Boolean).length;
+  return (!hasQuestion && wordCount <= 4) ? 'guess' : 'question';
+}
+
+function updateInputMode() {
+  const input = document.getElementById('main-input');
+  const btn   = document.getElementById('main-btn');
+  const icon  = document.getElementById('btn-icon');
+  const label = document.getElementById('btn-label');
+  const hint  = document.getElementById('input-hint');
+  if (!input) return;
+  const mode = detectInputMode(input.value);
+  if (mode === 'guess') {
+    input.classList.add('guess-mode');
+    btn.classList.add('guess-mode');
+    icon.textContent  = '🎯';
+    label.textContent = 'Guess!';
+    hint.innerHTML = '🎯 Looks like a guess — press Guess! to submit';
+  } else {
+    input.classList.remove('guess-mode');
+    btn.classList.remove('guess-mode');
+    icon.textContent  = '❓';
+    label.textContent = 'Ask';
+    hint.innerHTML = 'Type a yes/no question <em>or</em> your guess for the animal';
+  }
+}
+
+async function handleInput() {
+  if (!G || G.over || asking) return;
+  const input = document.getElementById('main-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  const mode = detectInputMode(text);
+  if (mode === 'guess') await processGuess(text);
+  else await processQuestion(text);
+}
+
+// ── Q&A LOG ───────────────────────────────────────────────────────────────────
+function addQA(question, answer, type) {
+  const log  = document.getElementById('qa-log');
+  const item = document.createElement('div');
+  item.className = 'qa-item ' + type;
+  const icon  = type==='yes'?'✅':type==='no'?'❌':type==='maybe'?'🤔':'⏳';
+  const label = type==='yes'?'YES':type==='no'?'NO':type==='maybe'?'SOMETIMES':'…';
+  const answerText = answer && answer.trim() ? ` <span class="qa-explanation">${answer}</span>` : '';
+  item.innerHTML = `<div class="qa-q">${question}</div>`
+    + (type !== 'thinking'
+      ? `<div class="qa-a">${icon} <span class="qa-badge">${label}</span>${answerText}</div>`
+      : `<div class="qa-a"><span class="spinner-sm"></span> thinking…</div>`);
+  log.prepend(item);
+  return item;
+}
+
+// ── PROCESS QUESTION ──────────────────────────────────────────────────────────
+async function processQuestion(question) {
+  if (G.qUsed >= MAX_Q) { endGame(false,'out'); return; }
+  const input = document.getElementById('main-input');
+  const btn   = document.getElementById('main-btn');
+  input.value = ''; updateInputMode();
+  input.disabled = true; btn.disabled = true; asking = true;
+  G.qUsed++; renderQBubbles();
+  const ph = addQA(question, '', 'thinking');
+  try {
+    const context = G.questions.map((q,i) => `Q${i+1}: ${q.q} → ${q.a}`).join('\n');
+    const d = await callAI(
+      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
+Answer the player's questions accurately. NEVER reveal the animal name.
+
+RULES:
+- Answer "yes", "no", or "sometimes" — that is all.
+- Leave explanation blank ("") in almost every case. A bare yes or no is ideal.
+- Only add a very short explanation (3-5 words max) when the question is genuinely ambiguous and silence would mislead — e.g. "Does it live in water?" for a semi-aquatic animal → "sometimes" + "lives near water". For clear yes/no questions, explanation must be "".
+- NEVER give hints, trivia, or extra context beyond what was asked.
+- Handle all question types accurately: legs, habitat, classification, size comparisons, physical traits, movement, diet, geography, behavior, reproduction, etc.`,
+      `Secret animal: "${G.animal.name}".
+${context ? 'Previous Q&A:\n' + context + '\n' : ''}
+Player question: "${question}"
+Respond with ONLY this JSON: {"answer":"yes","explanation":"","type":"yes"}
+(type must be "yes", "no", or "maybe". explanation should almost always be "")`
+    );
+    document.getElementById('qa-log').removeChild(ph);
+    const type = d.type || (d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
+    G.questions.push({ q: question, a: d.answer, explanation: d.explanation||'', type });
+    addQA(question, d.explanation||'', type);
+    renderSuggestions();
+    if (G.qUsed >= MAX_Q) setTimeout(() => endGame(false,'out'), 800);
+  } catch(e) {
+    document.getElementById('qa-log').removeChild(ph);
+    addQA(question, 'Could not get an answer — try again', 'no');
+    G.qUsed--; renderQBubbles();
+  } finally {
+    asking = false; input.disabled = false; btn.disabled = false;
+    if (!G.over) setTimeout(() => input.focus(), 50);
+  }
+}
+
+// ── PROCESS GUESS ─────────────────────────────────────────────────────────────
+async function processGuess(guess) {
+  const input = document.getElementById('main-input');
+  const btn   = document.getElementById('main-btn');
+  input.value = ''; updateInputMode();
+  input.disabled = true; btn.disabled = true; asking = true;
+  G.qUsed++; renderQBubbles();
+  const ph = addQA(`🎯 Guess: "${guess}"`, '', 'thinking');
+  try {
+    const an = G.animal.name.toLowerCase().trim();
+    const gn = guess.toLowerCase().trim();
+    let correct = an===gn || an.includes(gn) || gn.includes(an) ||
+      an.split(' ').some(w => w.length>4 && gn.includes(w));
+    if (!correct && AI_ENABLED) {
+      try {
+        const chk = await callAI(
+          `You are judging a guess in a 21 Questions animal game. The secret animal is "${G.animal.name}".`,
+          `Player guessed: "${guess}". Correct if same animal, alternate name, or clearly same species.\nRespond ONLY: {"correct":true} or {"correct":false}`
+        );
+        correct = chk.correct === true;
+      } catch(_) {}
+    }
+    document.getElementById('qa-log').removeChild(ph);
+    if (correct) {
+      G.questions.push({ q:`🎯 Guess: "${guess}"`, a:'Correct!', explanation:'Yes! That\'s right!', type:'yes' });
+      addQA(`🎯 Guess: "${guess}"`, "Yes! That's right!", 'yes');
+      endGame(true);
+    } else {
+      G.questions.push({ q:`🎯 Guess: "${guess}"`, a:'Not quite!', explanation:'Not quite — keep asking questions!', type:'no' });
+      addQA(`🎯 Guess: "${guess}"`, 'Not quite — keep asking questions!', 'no');
+      if (G.qUsed >= MAX_Q) setTimeout(() => endGame(false,'out'), 800);
+    }
+  } catch(e) {
+    try { document.getElementById('qa-log').removeChild(ph); } catch(_) {}
+    G.qUsed--; renderQBubbles();
+  } finally {
+    asking = false; input.disabled = false; btn.disabled = false;
+    if (!G.over) setTimeout(() => input.focus(), 50);
+  }
+}
+
+// ── START GAME ────────────────────────────────────────────────────────────────
+async function startGame() {
+  document.getElementById('start-btn').disabled = true;
+  hideAll(); show('panel-loading');
+  document.getElementById('loading-msg').textContent = 'Picking a mystery animal…';
+
+  const diff = selectedDiff;
+  const chosenCats = ['land','sky','ocean','fresh'].filter(c => selectedCats.has(c));
+  const catNames = { land:'land', sky:'sky', ocean:'ocean', fresh:'freshwater' };
+  const catDesc = chosenCats.length===4
+    ? 'any habitat (land, sky, freshwater, or ocean)'
+    : 'these habitats only: ' + chosenCats.map(c => catNames[c]).join(', ');
+  const diffDesc = {
+    easy:   'a very well-known animal that most children would recognize',
+    medium: 'a moderately well-known animal — real species but less common',
+    hard:   'a rare, obscure, or unusual animal species that most adults would not immediately know'
+  }[diff];
+
+  let animal = null;
+  if (AI_ENABLED) {
+    try {
+      const d = await callAI(
+        `You are running a 21 Questions animal guessing game. Pick a real animal species.`,
+        `Pick one animal. Requirements:\n- Habitat: ${catDesc}\n- Difficulty: ${diffDesc}\n- Must be a real, living species\n- Be specific (e.g. "Blue-footed Booby" not just "bird")\n\nRespond with ONLY this JSON:\n{"name":"Common Name","scientific_name":"Scientific name","habitat":"brief habitat","fun_fact":"one interesting fact","wiki":"Wikipedia_article_title","category":"ocean OR land"}`
+      );
+      if (d.name) animal = d;
+    } catch(e) { console.warn('AI pick failed:', e); }
+  }
+
+  if (!animal) {
+    const poolKeys = [...new Set(chosenCats.map(c => c==='sky'?'land':c==='fresh'?'ocean':c))];
+    const pool = [...new Set(poolKeys.flatMap(k => STATIC[diff][k]||[]))];
+    const name = pool[Math.floor(Math.random()*pool.length)];
+    animal = { name, scientific_name:'', habitat: chosenCats.includes('ocean')?'ocean':'land', fun_fact:'', wiki: name.replace(/ /g,'_'), category: chosenCats.includes('ocean')?'ocean':'land' };
+  }
+
+  const catKey = chosenCats.length===4?'all':chosenCats.includes('ocean')?'ocean':'land';
+  G = { animal, questions:[], qUsed:0, over:false, won:false, diff, cat:catKey, cats:[...selectedCats] };
+
+  const emoji = chosenCats.length===4?'🌍':(EMOJIS[chosenCats[0]]||'🦁');
+  document.getElementById('mystery-emoji').textContent = emoji;
+  const habitatNames = { land:'Land', sky:'Sky', ocean:'Ocean', fresh:'Freshwater' };
+  document.getElementById('mystery-hint').textContent = chosenCats.length===4
+    ? '🌍 Could be any animal'
+    : '🔍 Habitat: ' + chosenCats.map(c=>habitatNames[c]).join(', ');
+  document.getElementById('qa-log').innerHTML = '';
+  document.getElementById('main-input').value = '';
+  updateInputMode();
+  renderQBubbles();
+  renderSuggestions();
+  hideAll(); show('panel-game');
+  setTimeout(() => document.getElementById('main-input').focus(), 100);
+}
+
+// ── END GAME ──────────────────────────────────────────────────────────────────
+async function endGame(won, reason) {
+  G.over = true; G.won = won;
+  hideAll();
+  const a = G.animal;
+  const score = won ? Math.max(1, 21 - G.qUsed + 1) : 0;
+  const img = await getAnimalImg(a.name, a.wiki);
+  const animalEmoji = document.getElementById('mystery-emoji')?.textContent || '🐾';
+
+  function makeQALog(targetId) {
+    const el = document.getElementById(targetId);
+    el.innerHTML = '';
+    G.questions.forEach((q,i) => {
+      const item = document.createElement('div'); item.className = 'qa-item ' + q.type;
+      const icon = q.type==='yes'?'✅':q.type==='no'?'❌':'🤔';
+      const lbl  = q.type==='yes'?'YES':q.type==='no'?'NO':'SOMETIMES';
+      item.innerHTML = `<div class="qa-q">Q${i+1}: ${q.q}</div><div class="qa-a">${icon} <span class="qa-badge">${lbl}</span>${q.explanation?' <span class="qa-explanation">'+q.explanation+'</span>':''}</div>`;
+      el.appendChild(item);
+    });
+  }
+
+  if (won) {
+    // ── WIN SCREEN ────────────────────────────────────────────────────────
+    document.getElementById('win-qs').innerHTML =
+      `Got it in <span>${G.qUsed}</span> turn${G.qUsed!==1?'s':''}!  Score: <span>${score}</span>`;
+    document.getElementById('win-animal-name').textContent = a.name;
+    document.getElementById('win-sci-name').textContent = a.scientific_name || '';
+
+    // Photo
+    const winImgWrap = document.getElementById('win-img-wrap');
+    winImgWrap.innerHTML = img
+      ? `<img src="${img}" class="win-animal-img" alt="${a.name}" onerror="this.style.display='none'">`
+      : `<div class="win-animal-placeholder">${animalEmoji}</div>`;
+
+    // Two interesting facts via AI
+    const factsDiv = document.getElementById('win-facts');
+    factsDiv.innerHTML = '<div style="text-align:center;font-size:13px;color:var(--text3);font-weight:700;padding:6px 0">Loading fun facts…</div>';
+    show('panel-result-win');
+    launchConfetti();
+
+    // Fetch facts async — don't block reveal
+    if (AI_ENABLED) {
+      try {
+        const d = await callAI(
+          `You are a wildlife expert providing fun facts about animals for a children's game.`,
+          `Give exactly 2 interesting, surprising, and family-friendly facts about the ${a.name}.
+Each fact should be one sentence, vivid, and something most people don't know.
+Respond with ONLY this JSON: {"fact1":"...","fact2":"..."}`
+        );
+        factsDiv.innerHTML = '';
+        [d.fact1, d.fact2].filter(Boolean).forEach((fact, i) => {
+          const icons = ['🌟','💫'];
+          const div = document.createElement('div'); div.className = 'win-fact';
+          div.innerHTML = `<span class="win-fact-icon">${icons[i]||'✨'}</span><span class="win-fact-text">${fact}</span>`;
+          factsDiv.appendChild(div);
+        });
+      } catch(e) {
+        // Fallback to fun_fact from pick if AI fails
+        factsDiv.innerHTML = a.fun_fact
+          ? `<div class="win-fact"><span class="win-fact-icon">🌟</span><span class="win-fact-text">${a.fun_fact}</span></div>`
+          : '';
+      }
+    } else if (a.fun_fact) {
+      factsDiv.innerHTML = `<div class="win-fact"><span class="win-fact-icon">🌟</span><span class="win-fact-text">${a.fun_fact}</span></div>`;
+    } else {
+      factsDiv.innerHTML = '';
+    }
+
+    makeQALog('win-qa');
+
+  } else {
+    // ── LOSE SCREEN ───────────────────────────────────────────────────────
+    document.getElementById('lose-animal-name').textContent = a.name;
+    document.getElementById('lose-sci-name').textContent = a.scientific_name || '';
+
+    const loseImgWrap = document.getElementById('lose-img-wrap');
+    loseImgWrap.innerHTML = img
+      ? `<img src="${img}" class="lose-animal-img" alt="${a.name}" onerror="this.style.display='none'">`
+      : `<div class="lose-animal-placeholder">${animalEmoji}</div>`;
+
+    makeQALog('lose-qa');
+    show('panel-result-lose');
+  }
+
+  leaderboard.unshift({ animal:a.name, diff:G.diff, cat:G.cat, won, score, qs:G.qUsed, ts:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}) });
+  if (leaderboard.length > 20) leaderboard.pop();
+}
+
+// ── CONFETTI ──────────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+
+  const COLORS = ['#22c55e','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#ff6b35','#06b6d4'];
+  const SHAPES = ['rect','circle','triangle'];
+  const pieces = Array.from({length: 140}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height * 0.5 - 20,
+    r: Math.random() * 7 + 4,
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    shape: SHAPES[Math.floor(Math.random()*SHAPES.length)],
+    vx: (Math.random()-0.5)*3,
+    vy: Math.random()*3+2,
+    rot: Math.random()*360,
+    vrot: (Math.random()-0.5)*6,
+    opacity: 1
+  }));
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vrot;
+      if (frame > 90) p.opacity = Math.max(0, p.opacity - 0.012);
+      if (p.y < canvas.height + 20 && p.opacity > 0) alive = true;
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.r, -p.r*0.5, p.r*2, p.r);
+      } else if (p.shape === 'circle') {
+        ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.moveTo(0,-p.r); ctx.lineTo(p.r,p.r); ctx.lineTo(-p.r,p.r); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    });
+    frame++;
+    if (alive && frame < 240) requestAnimationFrame(draw);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display='none'; }
+  }
+  requestAnimationFrame(draw);
+}
+
+function resetGame() { G=null; ['panel-result-win','panel-result-lose'].forEach(hide); hideAll(); show('panel-setup'); document.getElementById('start-btn').disabled=false; }
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+function renderLB() {
+  const body = document.getElementById('lb-body');
+  if (!leaderboard.length) { body.innerHTML='<div style="font-size:14px;color:var(--text3);text-align:center;padding:1.5rem 0;font-weight:700;">No games yet!</div>'; updateStats(); return; }
+  const medals=['🥇','🥈','🥉'];
+  body.innerHTML=[...leaderboard].sort((a,b)=>b.score-a.score).map((e,i)=>
+    `<div class="lb-row"><span class="lb-rank">${medals[i]||(i+1)}</span><span class="lb-animal">${e.animal}</span><span class="lb-meta">${e.ts} · ${e.qs}Q</span><span class="lb-badge ${e.won?'win':'lose'}">${e.won?'Win':'Loss'}</span><span class="lb-score">${e.score}</span></div>`
+  ).join('');
+  updateStats();
+}
+function updateStats() {
+  const p=leaderboard.length, w=leaderboard.filter(e=>e.won).length, b=leaderboard.reduce((m,e)=>Math.max(m,e.score),0);
+  document.getElementById('stat-played').textContent=p;
+  document.getElementById('stat-wr').textContent=p?Math.round(w/p*100)+'%':'—';
+  document.getElementById('stat-best').textContent=p?b:'—';
+}
+function clearLB() { if(confirm('Clear all scores?')){leaderboard=[];renderLB();} }
+
+document.getElementById('tab-lb').classList.add('hidden');
+</script>
+</body>
+</html>
