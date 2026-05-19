@@ -586,7 +586,28 @@ const HARD=new Set(['Keith Richards','Jimmy Page','Robert Plant','Dave Grohl','M
 const POOL={easy:DB.filter(c=>EASY.has(c.name)),medium:DB.filter(c=>!EASY.has(c.name)&&!HARD.has(c.name)),hard:DB.filter(c=>HARD.has(c.name))};
 const DIFF_HINTS={easy:'Easy: household names across all categories.',medium:'Medium: very well known but not the absolute top tier.',hard:'Hard: deeper cuts — niche athletes, historical figures, rising stars.'};
 const TL_MIN=1,TL_MAX=100;
-let G=null,leaderboard=[],guessing=false,usedNames={easy:new Set(),medium:new Set(),hard:new Set()};
+let G=null,leaderboard=[],guessing=false;
+
+// Persist used names across sessions so the same person doesn't repeat
+function loadUsedNames() {
+  const stored = localStorage.getItem('ou_used') || '{}';
+  try {
+    const parsed = JSON.parse(stored);
+    return {
+      easy:   new Set(parsed.easy   || []),
+      medium: new Set(parsed.medium || []),
+      hard:   new Set(parsed.hard   || []),
+    };
+  } catch { return {easy:new Set(),medium:new Set(),hard:new Set()}; }
+}
+function saveUsedNames() {
+  localStorage.setItem('ou_used', JSON.stringify({
+    easy:   [...usedNames.easy],
+    medium: [...usedNames.medium],
+    hard:   [...usedNames.hard],
+  }));
+}
+let usedNames = loadUsedNames();
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function norm(s){return s.toLowerCase().trim().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');}
@@ -612,9 +633,17 @@ function pickPool(diff){
   const pool=POOL[diff].length?POOL[diff]:DB;
   const used=usedNames[diff];
   let avail=pool.filter(c=>!used.has(c.name));
-  if(!avail.length){used.clear();avail=pool;}
-  const pick=avail[Math.floor(Math.random()*avail.length)];
-  used.add(pick.name);return pick;
+  // Reset when we've cycled through everyone
+  if(avail.length===0){used.clear();avail=[...pool];}
+  // Fisher-Yates shuffle for true randomness
+  for(let i=avail.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [avail[i],avail[j]]=[avail[j],avail[i]];
+  }
+  const pick=avail[0];
+  used.add(pick.name);
+  saveUsedNames(); // persist so it survives page refresh
+  return pick;
 }
 
 function lookupStatic(input){
@@ -754,11 +783,21 @@ async function startGame(){
   let celeb=null;
   if(AI_ENABLED){
     try{
+      // Build exclusion list from recently used names
+      const recentlyUsed = [...usedNames[diff]].slice(-20);
+      const excludeStr = recentlyUsed.length > 0
+        ? `\n\nDo NOT pick any of these recently used answers: ${recentlyUsed.join(', ')}.`
+        : '';
       const d=await callAI(
-        'Pick a celebrity for the Older/Under guessing game. Use web_search to verify birth date.',
-        `Pick one ${desc}. Use web_search to confirm their exact birth date. Age = if living, age as of 2026; if deceased, age at death. Also provide their Wikipedia article title.\n\nRespond with ONLY this JSON:\n{"name":"Full Name","age":50,"born":1974,"wiki":"Wikipedia_Page_Title"}`
+        'Pick a celebrity for the Older/Under guessing game. Use web_search to verify birth date. Pick someone interesting and varied — not always the most obvious choice.',
+        `Pick one ${desc}. Be creative and varied — avoid the most predictable choices. Use web_search to confirm their exact birth date. Age = if living, age as of 2026; if deceased, age at death. Also provide their Wikipedia article title.${excludeStr}\n\nRespond with ONLY this JSON:\n{"name":"Full Name","age":50,"born":1974,"wiki":"Wikipedia_Page_Title"}`
       );
-      if(d.name&&d.age)celeb=d;
+      if(d.name&&d.age){
+        celeb=d;
+        // Record AI-picked name to prevent repeats
+        usedNames[diff].add(d.name);
+        saveUsedNames();
+      }
     }catch(e){console.warn('AI pick failed:',e.message);}
   }
   if(!celeb||!celeb.name||!celeb.age){celeb=pickPool(diff);}
