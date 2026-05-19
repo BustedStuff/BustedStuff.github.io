@@ -132,8 +132,6 @@ body {
 .tl-pin.strike .tl-pin-label { color: var(--danger); }
 .tl-pin.correct .tl-pin-dot { background: var(--dk-green); border-color: var(--dk-green); width: 13px; height: 13px; }
 .tl-pin.correct .tl-pin-label { color: var(--dk-green); font-weight: 700; }
-.tl-icons { display: flex; justify-content: space-between; padding: 2px 2px 0; }
-.tl-icon-baby, .tl-icon-old { font-size: 20px; line-height: 1; }
 
 /* ── INPUT ── */
 .input-row { display: flex; gap: 8px; margin-top: 10px; }
@@ -276,7 +274,6 @@ body {
           <div class="tl-ends"><span>younger (1)</span><span>older (100)</span></div>
           <div class="tl-track"><div class="tl-fill" id="tl-fill" style="left:0%;width:100%;background:var(--dk-card2);"></div></div>
           <div class="tl-pins" id="tl-pins"></div>
-          <div class="tl-icons"><span class="tl-icon-baby">👶</span><span class="tl-icon-old">👴</span></div>
         </div>
         <div class="input-row">
           <input type="text" id="guess-input" placeholder="Name a famous person…" autocomplete="off"
@@ -306,7 +303,6 @@ body {
         <div class="tl-ends"><span>younger (1)</span><span>older (100)</span></div>
         <div class="tl-track"><div class="tl-fill" style="left:0%;width:100%;background:var(--dk-card2);"></div></div>
         <div class="tl-pins" id="win-pins"></div>
-        <div class="tl-icons"><span class="tl-icon-baby">👶</span><span class="tl-icon-old">👴</span></div>
       </div>
       <div style="text-align:center;margin-top:14px;">
         <button class="btn-secondary" onclick="resetGame()">↺ Play again</button>
@@ -329,7 +325,6 @@ body {
         <div class="tl-ends"><span style="color:#555">younger (1)</span><span style="color:#555">older (100)</span></div>
         <div class="tl-track" style="border-color:#2a2f36;background:#1a1d21;"><div class="tl-fill" style="left:0%;width:100%;background:#2a2f36;"></div></div>
         <div class="tl-pins" id="lose-pins"></div>
-        <div class="tl-icons" style="opacity:.3;"><span class="tl-icon-baby">👶</span><span class="tl-icon-old">👴</span></div>
       </div>
       <div style="text-align:center;margin-top:14px;">
         <button class="btn-secondary" onclick="resetGame()" style="color:rgba(255,255,255,.3);border-color:#333;">↺ Try again</button>
