@@ -244,107 +244,53 @@ const VENUE_COORDS = {
 };
 
 const FLAG_CODES = {
-  "United States": "us",
-  "USA": "us",
-  "US": "us",
-  "Canada": "ca",
-  "Mexico": "mx",
-  "Argentina": "ar",
-  "Brazil": "br",
-  "Brasil": "br",
-  "Uruguay": "uy",
-  "Colombia": "co",
-  "Ecuador": "ec",
-  "Paraguay": "py",
-  "Venezuela": "ve",
-  "Chile": "cl",
-  "Peru": "pe",
-  "England": "gb-eng",
-  "France": "fr",
-  "Spain": "es",
-  "Germany": "de",
-  "Portugal": "pt",
-  "Netherlands": "nl",
-  "Belgium": "be",
-  "Croatia": "hr",
-  "Austria": "at",
-  "Switzerland": "ch",
-  "Scotland": "gb-sct",
-  "Norway": "no",
-  "Sweden": "se",
-  "Turkey": "tr",
-  "Türkiye": "tr",
-  "Czech Republic": "cz",
-  "Czechia": "cz",
-  "Bosnia and Herzegovina": "ba",
-  "Bosnia & Herzegovina": "ba",
-  "Bosnia-H.": "ba",
-  "Slovenia": "si",
-  "Slovakia": "sk",
-  "Albania": "al",
-  "Georgia": "ge",
-  "Romania": "ro",
-  "Hungary": "hu",
-  "Ukraine": "ua",
-  "Serbia": "rs",
-  "Poland": "pl",
-  "Denmark": "dk",
-  "Greece": "gr",
-  "Italy": "it",
-  "Japan": "jp",
-  "South Korea": "kr",
-  "Korea Republic": "kr",
-  "Australia": "au",
-  "Iran": "ir",
-  "IR Iran": "ir",
-  "Saudi Arabia": "sa",
-  "Qatar": "qa",
-  "Uzbekistan": "uz",
-  "Jordan": "jo",
-  "Morocco": "ma",
-  "Nigeria": "ng",
-  "Senegal": "sn",
-  "Ivory Coast": "ci",
-  "Côte d\'Ivoire": "ci",
-  "Cote d\'Ivoire": "ci",
-  "Ghana": "gh",
-  "Egypt": "eg",
-  "Tunisia": "tn",
-  "Algeria": "dz",
-  "Mali": "ml",
-  "Cameroon": "cm",
-  "South Africa": "za",
-  "DR Congo": "cd",
-  "Congo DR": "cd",
-  "Democratic Republic of Congo": "cd",
-  "Cape Verde": "cv",
-  "Cabo Verde": "cv",
-  "Costa Rica": "cr",
-  "Panama": "pa",
-  "Honduras": "hn",
-  "Guatemala": "gt",
-  "Jamaica": "jm",
-  "Curaçao": "cw",
-  "Curacao": "cw",
-  "Trinidad and Tobago": "tt",
-  "El Salvador": "sv",
-  "New Zealand": "nz",
-  "Iraq": "iq",
-  "Haiti": "ht"
+  "United States": "us", "USA": "us", "US": "us",
+  "Canada": "ca", "Mexico": "mx",
+  "Argentina": "ar", "Brazil": "br", "Brasil": "br",
+  "Uruguay": "uy", "Colombia": "co", "Ecuador": "ec",
+  "Paraguay": "py", "Venezuela": "ve", "Chile": "cl", "Peru": "pe",
+  "England": "gb-eng", "France": "fr", "Spain": "es", "Germany": "de",
+  "Portugal": "pt", "Netherlands": "nl", "Belgium": "be", "Croatia": "hr",
+  "Austria": "at", "Switzerland": "ch", "Scotland": "gb-sct",
+  "Norway": "no", "Sweden": "se", "Turkey": "tr", "Turkiye": "tr",
+  "Czech Republic": "cz", "Czechia": "cz",
+  "Bosnia and Herzegovina": "ba", "Bosnia & Herzegovina": "ba", "Bosnia-H.": "ba",
+  "Slovenia": "si", "Slovakia": "sk", "Albania": "al", "Georgia": "ge",
+  "Romania": "ro", "Hungary": "hu", "Ukraine": "ua", "Serbia": "rs",
+  "Poland": "pl", "Denmark": "dk", "Greece": "gr", "Italy": "it",
+  "Japan": "jp", "South Korea": "kr", "Korea Republic": "kr",
+  "Australia": "au", "Iran": "ir", "IR Iran": "ir",
+  "Saudi Arabia": "sa", "Qatar": "qa", "Uzbekistan": "uz", "Jordan": "jo",
+  "Morocco": "ma", "Nigeria": "ng", "Senegal": "sn",
+  "Ivory Coast": "ci", "Cote d Ivoire": "ci",
+  "Ghana": "gh", "Egypt": "eg", "Tunisia": "tn", "Algeria": "dz",
+  "Mali": "ml", "Cameroon": "cm", "South Africa": "za",
+  "DR Congo": "cd", "Congo DR": "cd", "Democratic Republic of Congo": "cd",
+  "Cape Verde": "cv", "Cabo Verde": "cv",
+  "Costa Rica": "cr", "Panama": "pa", "Honduras": "hn",
+  "Guatemala": "gt", "Jamaica": "jm", "Curacao": "cw",
+  "Trinidad and Tobago": "tt", "El Salvador": "sv",
+  "New Zealand": "nz", "Iraq": "iq", "Haiti": "ht",
 };
 
+
+function normalizeStr(s) {
+  try { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); } catch { return s.toLowerCase(); }
+}
 
 function teamFlagCode(name) {
   if (!name || name === "TBD") return null;
   if (FLAG_CODES[name]) return FLAG_CODES[name];
+  const norm = normalizeStr(name);
   for (const [k, v] of Object.entries(FLAG_CODES)) {
-    if (name.includes(k) || k.includes(name)) return v;
+    if (normalizeStr(k) === norm) return v;
+    if (norm.includes(normalizeStr(k)) || normalizeStr(k).includes(norm)) return v;
   }
   return null;
 }
 
 function FlagImg({ code, size }) {
-  if (!code) return <span style={{fontSize: size||"1.4rem"}}>🏳</span>;
+  if (!code) return <span style={{fontSize: size||"1.4rem"}}>&#x1F3F3;</span>;
   const sz = size === "sm" ? 20 : 28;
   return (
     <img
@@ -353,186 +299,6 @@ function FlagImg({ code, size }) {
       style={{width: sz+"px", height: Math.round(sz*0.75)+"px", borderRadius:2, objectFit:"cover", display:"inline-block", verticalAlign:"middle"}}
       onError={(e)=>{ e.target.style.display="none"; }}
     />
-  );
-}
-  return "🏳";
-}
-  return "🏳";
-}
-
-const store = {
-  get: async (k) => { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
-  set: async (k, v) => { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
-};
-
-function calcPts(pick, result, group) {
-  // No result yet or no pick submitted → 0
-  if (!result || result.homeScore == null || result.homeScore === "") return 0;
-  if (!pick || pick.homeScore == null || pick.homeScore === "") return SCORING.wrongOrMissed;
-
-  const rH = parseInt(result.homeScore), rA = parseInt(result.awayScore);
-  const pH = parseInt(pick.homeScore),   pA = parseInt(pick.awayScore);
-
-  const resultIsDraw = rH === rA;
-  const pickIsDraw   = pH === pA;
-  const resultHomeWin = rH > rA;
-  const pickHomeWin   = pH > pA;
-
-  // Did they pick the correct outcome (who wins / draw)?
-  const correctOutcome =
-    (resultIsDraw && pickIsDraw) ||
-    (resultHomeWin && pickHomeWin) ||
-    (!resultIsDraw && !resultHomeWin && !pickIsDraw && !pickHomeWin);
-
-  if (!correctOutcome) return SCORING.wrongOrMissed;
-
-  // ── Draw branch ───────────────────────────────────────────────────────────
-  if (resultIsDraw) {
-    const base = (pH === rH && pA === rA) ? SCORING.correctDrawExact : SCORING.correctDrawOnly;
-    return base * stageMultiplier(group);
-  }
-
-  // ── Win/Loss branch ───────────────────────────────────────────────────────
-  const winnerGoals = resultHomeWin ? rH : rA;
-  const loserGoals  = resultHomeWin ? rA : rH;
-  const pickedWinnerGoals = pickHomeWin ? pH : pA;
-  const pickedLoserGoals  = pickHomeWin ? pA : pH;
-
-  const gotWinnerGoals = pickedWinnerGoals === winnerGoals;
-  const gotLoserGoals  = pickedLoserGoals  === loserGoals;
-
-  let base;
-  if (gotWinnerGoals) base = SCORING.correctWinnerWinner;
-  else if (gotLoserGoals) base = SCORING.correctWinnerLoser;
-  else base = SCORING.correctWinner;
-
-  return base * stageMultiplier(group);
-}
-
-function isLocked(iso) {
-  if (!iso) return false;
-  return new Date() >= new Date(new Date(iso).getTime() - 60000);
-}
-
-function countdown(iso) {
-  if (!iso) return null;
-  const diff = new Date(new Date(iso).getTime() - 60000) - new Date();
-  if (diff <= 0) return null;
-  const h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
-  if (h>48) return Math.floor(h/24)+"d "+h%24+"h";
-  if (h>0) return h+"h "+m+"m";
-  if (m>0) return m+"m "+s+"s";
-  return s+"s";
-}
-
-async function loadFixtures(key) {
-  // Route through Cloudflare Worker proxy to avoid CORS restrictions.
-  // The worker injects the API key server-side — no key needed in the browser call.
-  const proxyUrl = "https://hidden-limit-f2ce.nsaund85.workers.dev/wc/matches?season=2026";
-  const r = await fetch(proxyUrl);
-  if (!r.ok) throw new Error("Worker proxy error " + r.status);
-  const d = await r.json();
-  return (d.matches || []).map((m, i) => ({
-    id: String(m.id || i),
-    date: (m.utcDate || "").split("T")[0],
-    kickoffISO: m.utcDate || "",
-    time: m.utcDate ? new Date(m.utcDate).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/New_York"}) : "",
-    home: m.homeTeam?.shortName || m.homeTeam?.name || "TBD",
-    away: m.awayTeam?.shortName || m.awayTeam?.name || "TBD",
-    homeFlag: teamFlagCode(m.homeTeam?.name),
-    awayFlag: teamFlagCode(m.awayTeam?.name),
-    venue: m.venue || "TBD",
-    group: m.group || m.stage || "Group Stage",
-    status: m.status || "TIMED",
-  }));
-}
-
-
-async function loadWeather(venue, iso) {
-  const c = VENUE_COORDS[venue];
-  if (!c || !iso) return null;
-  const date = iso.split("T")[0];
-  try {
-    const url = "https://api.open-meteo.com/v1/forecast?latitude="+c.lat+"&longitude="+c.lon+
-      "&hourly=temperature_2m,weathercode,windspeed_10m,precipitation_probability"+
-      "&timezone="+encodeURIComponent(c.tz)+"&start_date="+date+"&end_date="+date;
-    const r = await fetch(url);
-    const d = await r.json();
-    const lh = parseInt(new Date(iso).toLocaleString("en-US",{timeZone:c.tz,hour:"2-digit",hour12:false})) || 12;
-    const idx = Math.min(lh, (d.hourly?.time?.length || 1) - 1);
-    const tc = d.hourly?.temperature_2m?.[idx];
-    return {
-      temp: tc != null ? Math.round(tc * 9/5 + 32) : null,
-      code: d.hourly?.weathercode?.[idx],
-      wind: Math.round((d.hourly?.windspeed_10m?.[idx] || 0) * 0.621),
-      precip: d.hourly?.precipitation_probability?.[idx] || 0,
-    };
-  } catch { return null; }
-}
-
-const SAMPLE = [
-  {id:"s1",date:"2026-06-11",kickoffISO:"2026-06-11T22:00:00Z",time:"6:00 PM",home:"Mexico",away:"South Africa",homeFlag:teamFlagCode("Mexico"),awayFlag:teamFlagCode("South Africa"),venue:"Estadio Azteca",group:"Group A",status:"TIMED"},
-  {id:"s2",date:"2026-06-12",kickoffISO:"2026-06-12T19:00:00Z",time:"3:00 PM",home:"USA",away:"Serbia",homeFlag:teamFlagCode("United States"),awayFlag:teamFlagCode("Serbia"),venue:"SoFi Stadium",group:"Group C",status:"TIMED"},
-  {id:"s3",date:"2026-06-12",kickoffISO:"2026-06-12T22:00:00Z",time:"6:00 PM",home:"Argentina",away:"Slovakia",homeFlag:teamFlagCode("Argentina"),awayFlag:teamFlagCode("Slovakia"),venue:"MetLife Stadium",group:"Group D",status:"TIMED"},
-  {id:"s4",date:"2026-06-13",kickoffISO:"2026-06-13T16:00:00Z",time:"12:00 PM",home:"Brazil",away:"Germany",homeFlag:teamFlagCode("Brazil"),awayFlag:teamFlagCode("Germany"),venue:"Rose Bowl",group:"Group F",status:"TIMED"},
-  {id:"s5",date:"2026-06-14",kickoffISO:"2026-06-14T19:00:00Z",time:"3:00 PM",home:"France",away:"Albania",homeFlag:teamFlagCode("France"),awayFlag:teamFlagCode("Albania"),venue:"Gillette Stadium",group:"Group E",status:"TIMED"},
-  {id:"s6",date:"2026-06-14",kickoffISO:"2026-06-14T22:00:00Z",time:"6:00 PM",home:"England",away:"Tunisia",homeFlag:teamFlagCode("England"),awayFlag:teamFlagCode("Tunisia"),venue:"AT&T Stadium",group:"Group G",status:"TIMED"},
-  {id:"s7",date:"2026-06-15",kickoffISO:"2026-06-15T19:00:00Z",time:"3:00 PM",home:"Spain",away:"Uzbekistan",homeFlag:teamFlagCode("Spain"),awayFlag:teamFlagCode("Uzbekistan"),venue:"Hard Rock Stadium",group:"Group H",status:"TIMED"},
-  {id:"s8",date:"2026-06-15",kickoffISO:"2026-06-15T22:00:00Z",time:"6:00 PM",home:"Portugal",away:"Croatia",homeFlag:teamFlagCode("Portugal"),awayFlag:teamFlagCode("Croatia"),venue:"NRG Stadium",group:"Group I",status:"TIMED"},
-];
-
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Inter:wght@400;500;600&display=swap');
-  * { box-sizing: border-box; }
-  body { margin: 0; }
-  .btn { cursor: pointer; transition: all .18s; }
-  .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
-  input[type=number] { -moz-appearance: textfield; }
-  input[type=number]::-webkit-outer-spin-button,
-  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  input:focus { outline: none !important; border-color: #F0A500 !important; box-shadow: 0 0 0 2px #F0A50033 !important; }
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: #060E1F; }
-  ::-webkit-scrollbar-thumb { background: #1E3354; border-radius: 3px; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-  .lang-switch { display:flex; align-items:center; gap:6px; background:#1E3354; border:1px solid #1A3560; border-radius:20px; padding:3px; cursor:pointer; }
-  .lang-opt { padding:4px 10px; border-radius:16px; font-size:0.72rem; font-weight:700; letter-spacing:.5px; transition:all .18s; display:flex; align-items:center; gap:5px; font-family:'Barlow Condensed',sans-serif; }
-  .lang-opt.active { background:#C8102E; color:#fff; }
-  .lang-opt.inactive { color:#3A5A80; }
-  .lang-opt.inactive:hover { color:#7A9CC0; }
-`;
-
-function PitchBg() {
-  return React.createElement("svg", {
-    style:{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",opacity:.04,zIndex:0},
-    xmlns:"http://www.w3.org/2000/svg"
-  },
-    React.createElement("defs", null,
-      React.createElement("pattern", {id:"pitch",x:"0",y:"0",width:"120",height:"120",patternUnits:"userSpaceOnUse"},
-        React.createElement("rect",{x:"0",y:"0",width:"120",height:"120",fill:"none",stroke:"#fff",strokeWidth:".6"}),
-        React.createElement("circle",{cx:"60",cy:"60",r:"28",fill:"none",stroke:"#fff",strokeWidth:".6"}),
-        React.createElement("circle",{cx:"60",cy:"60",r:"2",fill:"#fff"}),
-        React.createElement("line",{x1:"60",y1:"0",x2:"60",y2:"120",stroke:"#fff",strokeWidth:".4"})
-      )
-    ),
-    React.createElement("rect",{width:"100%",height:"100%",fill:"url(#pitch)"})
-  );
-}
-
-// ─── Language Switch ──────────────────────────────────────────────────────────
-function LangSwitch({ lang, setLang }) {
-  return (
-    <div className="lang-switch" onClick={() => setLang(lang === "en" ? "pt" : "en")} title="Switch language / Mudar idioma">
-      <div className={"lang-opt " + (lang==="en" ? "active" : "inactive")}>
-        <FlagImg code="us" size="sm"/> EN
-      </div>
-      <div className={"lang-opt " + (lang==="pt" ? "active" : "inactive")}>
-        <FlagImg code="br" size="sm"/> PT
-      </div>
-    </div>
   );
 }
 
@@ -1114,7 +880,6 @@ function App() {
   if (view==="admin") return <AdminView matches={matches} results={results} allPicks={allPicks} weather={weather} onSaveResult={handleSaveResult} onLogout={()=>setView("entry")} onRefresh={()=>loadLiveData(apiKeys)} onConfigApis={()=>setShowApiConfig(true)} loading={dataLoading} dataError={dataError} lang={lang} setLang={handleSetLang} />;
   return <ParticipantView teamName={teamName} matches={matches} results={results} allPicks={allPicks} weather={weather} onSavePick={handleSavePick} onLogout={()=>{setTeamName("");setView("entry");}} lang={lang} setLang={handleSetLang} />;
 }
-
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(App));
