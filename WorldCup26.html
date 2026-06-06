@@ -33,6 +33,18 @@ button:active{transform:translateY(0)}
 .filter-btn{border-radius:6px;padding:4px 12px;font-size:.73rem;font-weight:600;border:1px solid}
 .filter-btn.active{background:#1E3354;color:#F0A500;border-color:#1A3560}
 .filter-btn.inactive{background:transparent;color:#3A5A80;border-color:#1E3354}
+.week-nav{position:sticky;top:56px;z-index:40;background:#060E1Fdd;backdrop-filter:blur(8px);padding:8px 0 8px;margin-bottom:16px;border-bottom:1px solid #1A356044}
+.week-pill{border:1px solid #1A3560;border-radius:20px;padding:5px 14px;font-size:.72rem;font-weight:700;white-space:nowrap;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;transition:all .18s;cursor:pointer}
+.week-pill.active{background:#C8102E;color:#fff;border-color:#C8102E;box-shadow:0 2px 10px #C8102E44}
+.week-pill.inactive{background:transparent;color:#3A5A80}
+.week-pill:hover{color:#E8EDF5;border-color:#3A5A80}
+.week-scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scroll-behavior:smooth}
+.week-scroll::-webkit-scrollbar{height:3px}
+.week-scroll::-webkit-scrollbar-track{background:transparent}
+.week-scroll::-webkit-scrollbar-thumb{background:#1E3354;border-radius:3px}
+.week-header{display:flex;align-items:center;gap:12px;margin:24px 0 12px}
+.week-header-line{flex:1;height:1px;background:linear-gradient(90deg,#1A3560,transparent)}
+.week-header-text{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;color:#F0A500;white-space:nowrap}
 .red-btn{background:linear-gradient(135deg,#C8102E,#9A0C23);color:#fff;border:none;border-radius:8px;padding:13px;font-size:1rem;font-weight:700;letter-spacing:1.5px;width:100%;box-shadow:0 4px 20px #C8102E44}
 .gold-btn{background:linear-gradient(135deg,#F0A500,#FFD04A);color:#060E1F;border:none;border-radius:8px;padding:13px;font-size:1rem;font-weight:700;letter-spacing:1.5px;width:100%}
 .ghost-btn{background:transparent;border:1px solid #1E3354;color:#3A5A80;border-radius:8px;padding:9px;width:100%;font-size:.82rem}
@@ -157,7 +169,8 @@ let STATE={
   view:"entry",teamName:"",lang:"en",
   matches:[...SAMPLE_MATCHES],results:{},allPicks:{},weather:{},
   loading:true,dataLoading:false,dataError:"",
-  showApiConfig:false,tab:"picks",filter:"upcoming",adminTab:"results"
+  showApiConfig:false,tab:"picks",filter:"upcoming",adminTab:"results",
+  activeWeek:null
 };
 function t(){return STRINGS[STATE.lang];}
 
@@ -300,6 +313,47 @@ function matchCardHTML(m,pick,result,weather,lang,adminMode){
   </div>`;
 }
 
+// ── Week grouping ─────────────────────────────────────────────────────────────
+function groupByWeek(matches){
+  const groups={};
+  matches.forEach(m=>{
+    if(!m.kickoffISO&&!m.date){const k="Unknown";(groups[k]=groups[k]||{label:"Unknown",key:"Unknown",matches:[]}).matches.push(m);return;}
+    const d=new Date(m.kickoffISO||m.date+"T12:00:00Z");
+    // Week number from June 11 (tournament start)
+    const start=new Date("2026-06-11T00:00:00Z");
+    const diffDays=Math.floor((d-start)/(86400000));
+    const weekNum=Math.max(0,Math.floor(diffDays/7));
+    const weekStart=new Date(start.getTime()+weekNum*7*86400000);
+    const weekEnd=new Date(weekStart.getTime()+6*86400000);
+    const fmt=dt=>dt.toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
+    const key="week-"+weekNum;
+    const label=`Week ${weekNum+1}  ${fmt(weekStart)} – ${fmt(weekEnd)}`;
+    if(!groups[key])groups[key]={label,key,weekNum,matches:[]};
+    groups[key].matches.push(m);
+  });
+  return Object.values(groups).sort((a,b)=>a.weekNum-b.weekNum);
+}
+
+function weekNavHTML(weeks,activeWeek){
+  return `<div class="week-nav">
+    <div class="week-scroll" id="week-scroll">
+      ${weeks.map(w=>`<button class="week-pill ${w.key===activeWeek?'active':'inactive'}" onclick="jumpToWeek('${w.key}')">${w.label}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+function weekMatchesHTML(weeks,renderCard){
+  return weeks.map(w=>`
+    <div id="${w.key}" style="scroll-margin-top:110px">
+      <div class="week-header">
+        <div class="week-header-line"></div>
+        <div class="week-header-text">${w.label}</div>
+        <div class="week-header-line" style="background:linear-gradient(90deg,transparent,#1A3560)"></div>
+      </div>
+      ${w.matches.map(renderCard).join("")}
+    </div>`).join("");
+}
+
 // ── Render ───────────────────────────────────────────────────────────────────
 function render(){
   const app=document.getElementById("app");
@@ -394,12 +448,18 @@ function renderParticipant(app,T){
 
   let content="";
   if(STATE.tab==="picks"){
-    const filtersHTML=`<div style="display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap">
+    const filtersHTML=`<div style="display:flex;gap:5px;margin-bottom:0;flex-wrap:wrap">
       ${[["upcoming",T.open],["locked",T.locked],["completed",T.final],["all",T.all]].map(([k,l])=>`<button class="filter-btn ${STATE.filter===k?'active':'inactive'}" onclick="setFilter('${k}')">${l}</button>`).join("")}
     </div>`;
-    const cards=fm.length===0?`<p style="color:#3A5A80;font-style:italic">${T.noMatches}</p>`:
-      fm.map(m=>matchCardHTML(m,myPicks[m.id],STATE.results[m.id],STATE.weather[m.id],STATE.lang,false)).join("");
-    content=filtersHTML+cards;
+    if(fm.length===0){
+      content=filtersHTML+`<p style="color:#3A5A80;font-style:italic;margin-top:16px">${T.noMatches}</p>`;
+    } else {
+      const weeks=groupByWeek(fm);
+      const activeWeek=STATE.activeWeek||weeks[0]?.key;
+      const nav=weekNavHTML(weeks,activeWeek);
+      const cards=weekMatchesHTML(weeks,m=>matchCardHTML(m,myPicks[m.id],STATE.results[m.id],STATE.weather[m.id],STATE.lang,false));
+      content=filtersHTML+nav+cards;
+    }
   } else {
     const rows=board.length===0?`<p style="color:#3A5A80">${T.noPicks}</p>`:board.map((e,i)=>{
       const isMe=e.tm===STATE.teamName;
@@ -431,6 +491,7 @@ function renderParticipant(app,T){
     </div>
   </div>`;
   startTimers();
+  if(STATE.tab==="picks"&&!STATE.activeWeek)autoScrollToCurrentWeek();
 }
 
 function renderAdmin(app,T){
@@ -445,8 +506,11 @@ function renderAdmin(app,T){
 
   let content="";
   if(STATE.adminTab==="results"){
-    content=`<div class="section-title">${T.matchResults}</div>`+
-      STATE.matches.map(m=>matchCardHTML(m,null,STATE.results[m.id],STATE.weather[m.id],STATE.lang,true)).join("");
+    const weeks=groupByWeek(STATE.matches);
+    const activeWeek=STATE.activeWeek||weeks[0]?.key;
+    const nav=weekNavHTML(weeks,activeWeek);
+    const cards=weekMatchesHTML(weeks,m=>matchCardHTML(m,null,STATE.results[m.id],STATE.weather[m.id],STATE.lang,true));
+    content=`<div class="section-title">${T.matchResults}</div>`+nav+cards;
   } else if(STATE.adminTab==="picks"){
     content=`<div class="section-title">${T.allPicksTitle}</div>`+(board.length===0?`<p style="color:#3A5A80">${T.noPicks}</p>`:
       board.map(e=>`<div class="card" style="margin-bottom:12px">
@@ -493,6 +557,7 @@ function renderAdmin(app,T){
     </div>
   </div>`;
   startTimers();
+  if(STATE.adminTab==="results"&&!STATE.activeWeek)autoScrollToCurrentWeek();
 }
 
 function renderApiConfig(app,T){
@@ -513,6 +578,20 @@ function renderApiConfig(app,T){
 
 // ── Actions ──────────────────────────────────────────────────────────────────
 function toggleLang(){STATE.lang=STATE.lang==="en"?"pt":"en";store.set("wc-lang",STATE.lang);render();}
+function jumpToWeek(key){
+  STATE.activeWeek=key;
+  // Update pill highlights without full re-render
+  document.querySelectorAll(".week-pill").forEach(b=>{
+    const active=b.getAttribute("onclick").includes(`'${key}'`);
+    b.className="week-pill "+(active?"active":"inactive");
+  });
+  // Scroll the week pill into view in the nav
+  const activeBtn=document.querySelector(`.week-pill.active`);
+  if(activeBtn)activeBtn.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+  // Scroll the page to the week section
+  const target=document.getElementById(key);
+  if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+}
 
 function tryJoin(){
   const team=document.getElementById("inp-team")?.value?.trim();
@@ -538,9 +617,32 @@ function tryAdmin(){
 }
 
 function logout(){STATE.view="entry";STATE.teamName="";render();}
-function setTab(tab){STATE.tab=tab;render();}
-function setFilter(f){STATE.filter=f;render();}
-function setAdminTab(tab){STATE.adminTab=tab;render();}
+function setTab(tab){STATE.tab=tab;STATE.activeWeek=null;render();}
+function setFilter(f){STATE.filter=f;STATE.activeWeek=null;render();}
+function setAdminTab(tab){STATE.adminTab=tab;STATE.activeWeek=null;render();}
+
+function autoScrollToCurrentWeek(){
+  // Find the week containing today or the first upcoming match
+  const now=new Date();
+  const upcoming=STATE.matches.find(m=>m.kickoffISO&&new Date(m.kickoffISO)>=now);
+  if(!upcoming)return;
+  const start=new Date("2026-06-11T00:00:00Z");
+  const diffDays=Math.floor((new Date(upcoming.kickoffISO)-start)/86400000);
+  const weekNum=Math.max(0,Math.floor(diffDays/7));
+  const key="week-"+weekNum;
+  const target=document.getElementById(key);
+  if(target){
+    setTimeout(()=>{
+      target.scrollIntoView({behavior:"smooth",block:"start"});
+      const btn=document.querySelector(`.week-pill[onclick*="'${key}'"]`);
+      if(btn){
+        document.querySelectorAll(".week-pill").forEach(b=>b.className="week-pill inactive");
+        btn.className="week-pill active";
+        btn.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+      }
+    },120);
+  }
+}
 
 function updatePick(mid){
   const hs=document.getElementById("hs-"+mid)?.value;
