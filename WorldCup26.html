@@ -243,103 +243,120 @@ const VENUE_COORDS = {
   "BMO Field":               { lat:43.6333, lon:-79.4182, tz:"America/Toronto" },
 };
 
-// All 48 WC 2026 teams + common API name variants from football-data.org
-const FLAGS = {
-  // CONCACAF hosts
-  "United States":"US", "USA":"US", "US":"US",
-  "Canada":"CA",
-  "Mexico":"MX",
-  // CONMEBOL
-  "Argentina":"AR",
-  "Brazil":"BR", "Brasil":"BR",
-  "Uruguay":"UY",
-  "Colombia":"CO",
-  "Ecuador":"EC",
-  "Paraguay":"PY",
-  "Venezuela":"VE",
-  "Chile":"CL",
-  "Peru":"PE",
-  // UEFA
-  "England":"GB",
-  "France":"FR",
-  "Spain":"ES",
-  "Germany":"DE",
-  "Portugal":"PT",
-  "Netherlands":"NL",
-  "Belgium":"BE",
-  "Croatia":"HR",
-  "Austria":"AT",
-  "Switzerland":"CH",
-  "Scotland":"GB",  // uses GB-SCT but GB is safest cross-platform
-  "Norway":"NO",
-  "Sweden":"SE",
-  "Turkey":"TR", "Türkiye":"TR",
-  "Czech Republic":"CZ", "Czechia":"CZ",
-  "Bosnia and Herzegovina":"BA", "Bosnia & Herzegovina":"BA",
-  "Slovenia":"SI",
-  "Slovakia":"SK",
-  "Albania":"AL",
-  "Georgia":"GE",
-  "Romania":"RO",
-  "Hungary":"HU",
-  "Ukraine":"UA",
-  "Serbia":"RS",
-  "Poland":"PL",
-  "Denmark":"DK",
-  "Greece":"GR",
-  "Italy":"IT",   // in case the API returns old matches
-  // AFC
-  "Japan":"JP",
-  "South Korea":"KR", "Korea Republic":"KR",
-  "Australia":"AU",
-  "Iran":"IR", "IR Iran":"IR",
-  "Saudi Arabia":"SA",
-  "Qatar":"QA",
-  "Uzbekistan":"UZ",
-  "Jordan":"JO",
-  // CAF
-  "Morocco":"MA",
-  "Nigeria":"NG",
-  "Senegal":"SN",
-  "Ivory Coast":"CI", "Côte d'Ivoire":"CI", "Cote d'Ivoire":"CI",
-  "Ghana":"GH",
-  "Egypt":"EG",
-  "Tunisia":"TN",
-  "Algeria":"DZ",
-  "Mali":"ML",
-  "Cameroon":"CM",
-  "South Africa":"ZA",
-  "DR Congo":"CD", "Congo DR":"CD", "Democratic Republic of Congo":"CD",
-  "Cape Verde":"CV", "Cabo Verde":"CV",
-  // CONCACAF (non-hosts)
-  "Costa Rica":"CR",
-  "Panama":"PA",
-  "Honduras":"HN",
-  "Guatemala":"GT",
-  "Jamaica":"JM",
-  "Curaçao":"CW", "Curacao":"CW",
-  "Trinidad and Tobago":"TT",
-  "El Salvador":"SV",
-  // OFC
-  "New Zealand":"NZ",
-  // Intercontinental play-off
-  "Iraq":"IQ",
+const FLAG_CODES = {
+  "United States": "us",
+  "USA": "us",
+  "US": "us",
+  "Canada": "ca",
+  "Mexico": "mx",
+  "Argentina": "ar",
+  "Brazil": "br",
+  "Brasil": "br",
+  "Uruguay": "uy",
+  "Colombia": "co",
+  "Ecuador": "ec",
+  "Paraguay": "py",
+  "Venezuela": "ve",
+  "Chile": "cl",
+  "Peru": "pe",
+  "England": "gb-eng",
+  "France": "fr",
+  "Spain": "es",
+  "Germany": "de",
+  "Portugal": "pt",
+  "Netherlands": "nl",
+  "Belgium": "be",
+  "Croatia": "hr",
+  "Austria": "at",
+  "Switzerland": "ch",
+  "Scotland": "gb-sct",
+  "Norway": "no",
+  "Sweden": "se",
+  "Turkey": "tr",
+  "Türkiye": "tr",
+  "Czech Republic": "cz",
+  "Czechia": "cz",
+  "Bosnia and Herzegovina": "ba",
+  "Bosnia & Herzegovina": "ba",
+  "Bosnia-H.": "ba",
+  "Slovenia": "si",
+  "Slovakia": "sk",
+  "Albania": "al",
+  "Georgia": "ge",
+  "Romania": "ro",
+  "Hungary": "hu",
+  "Ukraine": "ua",
+  "Serbia": "rs",
+  "Poland": "pl",
+  "Denmark": "dk",
+  "Greece": "gr",
+  "Italy": "it",
+  "Japan": "jp",
+  "South Korea": "kr",
+  "Korea Republic": "kr",
+  "Australia": "au",
+  "Iran": "ir",
+  "IR Iran": "ir",
+  "Saudi Arabia": "sa",
+  "Qatar": "qa",
+  "Uzbekistan": "uz",
+  "Jordan": "jo",
+  "Morocco": "ma",
+  "Nigeria": "ng",
+  "Senegal": "sn",
+  "Ivory Coast": "ci",
+  "Côte d\'Ivoire": "ci",
+  "Cote d\'Ivoire": "ci",
+  "Ghana": "gh",
+  "Egypt": "eg",
+  "Tunisia": "tn",
+  "Algeria": "dz",
+  "Mali": "ml",
+  "Cameroon": "cm",
+  "South Africa": "za",
+  "DR Congo": "cd",
+  "Congo DR": "cd",
+  "Democratic Republic of Congo": "cd",
+  "Cape Verde": "cv",
+  "Cabo Verde": "cv",
+  "Costa Rica": "cr",
+  "Panama": "pa",
+  "Honduras": "hn",
+  "Guatemala": "gt",
+  "Jamaica": "jm",
+  "Curaçao": "cw",
+  "Curacao": "cw",
+  "Trinidad and Tobago": "tt",
+  "El Salvador": "sv",
+  "New Zealand": "nz",
+  "Iraq": "iq",
+  "Haiti": "ht"
 };
 
-function getFlagEmoji(code) {
-  if (!code) return "🏳";
-  const codePoints = [...code.toUpperCase()].map(c => 0x1F1E0 - 65 + c.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
+
+function teamFlagCode(name) {
+  if (!name || name === "TBD") return null;
+  if (FLAG_CODES[name]) return FLAG_CODES[name];
+  for (const [k, v] of Object.entries(FLAG_CODES)) {
+    if (name.includes(k) || k.includes(name)) return v;
+  }
+  return null;
 }
 
-function teamFlag(name) {
-  if (!name || name === "TBD") return "🏳";
-  // 1. Exact match
-  if (FLAGS[name]) return getFlagEmoji(FLAGS[name]);
-  // 2. Partial match (handles "Korea Republic" matching "South Korea" etc.)
-  for (const [k, v] of Object.entries(FLAGS)) {
-    if (name.includes(k) || k.includes(name)) return getFlagEmoji(v);
-  }
+function FlagImg({ code, size }) {
+  if (!code) return <span style={{fontSize: size||"1.4rem"}}>🏳</span>;
+  const sz = size === "sm" ? 20 : 28;
+  return (
+    <img
+      src={"https://flagcdn.com/" + sz + "x" + Math.round(sz*0.75) + "/" + code + ".png"}
+      alt={code}
+      style={{width: sz+"px", height: Math.round(sz*0.75)+"px", borderRadius:2, objectFit:"cover", display:"inline-block", verticalAlign:"middle"}}
+      onError={(e)=>{ e.target.style.display="none"; }}
+    />
+  );
+}
+  return "🏳";
+}
   return "🏳";
 }
 
@@ -422,8 +439,8 @@ async function loadFixtures(key) {
     time: m.utcDate ? new Date(m.utcDate).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/New_York"}) : "",
     home: m.homeTeam?.shortName || m.homeTeam?.name || "TBD",
     away: m.awayTeam?.shortName || m.awayTeam?.name || "TBD",
-    homeFlag: teamFlag(m.homeTeam?.name),
-    awayFlag: teamFlag(m.awayTeam?.name),
+    homeFlag: teamFlagCode(m.homeTeam?.name),
+    awayFlag: teamFlagCode(m.awayTeam?.name),
     venue: m.venue || "TBD",
     group: m.group || m.stage || "Group Stage",
     status: m.status || "TIMED",
@@ -454,14 +471,14 @@ async function loadWeather(venue, iso) {
 }
 
 const SAMPLE = [
-  {id:"s1",date:"2026-06-11",kickoffISO:"2026-06-11T22:00:00Z",time:"6:00 PM",home:"Mexico",away:"South Africa",homeFlag:getFlagEmoji("MX"),awayFlag:getFlagEmoji("ZA"),venue:"Estadio Azteca",group:"Group A",status:"TIMED"},
-  {id:"s2",date:"2026-06-12",kickoffISO:"2026-06-12T19:00:00Z",time:"3:00 PM",home:"USA",away:"Serbia",homeFlag:getFlagEmoji("US"),awayFlag:getFlagEmoji("RS"),venue:"SoFi Stadium",group:"Group C",status:"TIMED"},
-  {id:"s3",date:"2026-06-12",kickoffISO:"2026-06-12T22:00:00Z",time:"6:00 PM",home:"Argentina",away:"Slovakia",homeFlag:getFlagEmoji("AR"),awayFlag:getFlagEmoji("SK"),venue:"MetLife Stadium",group:"Group D",status:"TIMED"},
-  {id:"s4",date:"2026-06-13",kickoffISO:"2026-06-13T16:00:00Z",time:"12:00 PM",home:"Brazil",away:"Germany",homeFlag:getFlagEmoji("BR"),awayFlag:getFlagEmoji("DE"),venue:"Rose Bowl",group:"Group F",status:"TIMED"},
-  {id:"s5",date:"2026-06-14",kickoffISO:"2026-06-14T19:00:00Z",time:"3:00 PM",home:"France",away:"Albania",homeFlag:getFlagEmoji("FR"),awayFlag:getFlagEmoji("AL"),venue:"Gillette Stadium",group:"Group E",status:"TIMED"},
-  {id:"s6",date:"2026-06-14",kickoffISO:"2026-06-14T22:00:00Z",time:"6:00 PM",home:"England",away:"Tunisia",homeFlag:getFlagEmoji("GB"),awayFlag:getFlagEmoji("TN"),venue:"AT&T Stadium",group:"Group G",status:"TIMED"},
-  {id:"s7",date:"2026-06-15",kickoffISO:"2026-06-15T19:00:00Z",time:"3:00 PM",home:"Spain",away:"Uzbekistan",homeFlag:getFlagEmoji("ES"),awayFlag:getFlagEmoji("UZ"),venue:"Hard Rock Stadium",group:"Group H",status:"TIMED"},
-  {id:"s8",date:"2026-06-15",kickoffISO:"2026-06-15T22:00:00Z",time:"6:00 PM",home:"Portugal",away:"Croatia",homeFlag:getFlagEmoji("PT"),awayFlag:getFlagEmoji("HR"),venue:"NRG Stadium",group:"Group I",status:"TIMED"},
+  {id:"s1",date:"2026-06-11",kickoffISO:"2026-06-11T22:00:00Z",time:"6:00 PM",home:"Mexico",away:"South Africa",homeFlag:teamFlagCode("Mexico"),awayFlag:teamFlagCode("South Africa"),venue:"Estadio Azteca",group:"Group A",status:"TIMED"},
+  {id:"s2",date:"2026-06-12",kickoffISO:"2026-06-12T19:00:00Z",time:"3:00 PM",home:"USA",away:"Serbia",homeFlag:teamFlagCode("United States"),awayFlag:teamFlagCode("Serbia"),venue:"SoFi Stadium",group:"Group C",status:"TIMED"},
+  {id:"s3",date:"2026-06-12",kickoffISO:"2026-06-12T22:00:00Z",time:"6:00 PM",home:"Argentina",away:"Slovakia",homeFlag:teamFlagCode("Argentina"),awayFlag:teamFlagCode("Slovakia"),venue:"MetLife Stadium",group:"Group D",status:"TIMED"},
+  {id:"s4",date:"2026-06-13",kickoffISO:"2026-06-13T16:00:00Z",time:"12:00 PM",home:"Brazil",away:"Germany",homeFlag:teamFlagCode("Brazil"),awayFlag:teamFlagCode("Germany"),venue:"Rose Bowl",group:"Group F",status:"TIMED"},
+  {id:"s5",date:"2026-06-14",kickoffISO:"2026-06-14T19:00:00Z",time:"3:00 PM",home:"France",away:"Albania",homeFlag:teamFlagCode("France"),awayFlag:teamFlagCode("Albania"),venue:"Gillette Stadium",group:"Group E",status:"TIMED"},
+  {id:"s6",date:"2026-06-14",kickoffISO:"2026-06-14T22:00:00Z",time:"6:00 PM",home:"England",away:"Tunisia",homeFlag:teamFlagCode("England"),awayFlag:teamFlagCode("Tunisia"),venue:"AT&T Stadium",group:"Group G",status:"TIMED"},
+  {id:"s7",date:"2026-06-15",kickoffISO:"2026-06-15T19:00:00Z",time:"3:00 PM",home:"Spain",away:"Uzbekistan",homeFlag:teamFlagCode("Spain"),awayFlag:teamFlagCode("Uzbekistan"),venue:"Hard Rock Stadium",group:"Group H",status:"TIMED"},
+  {id:"s8",date:"2026-06-15",kickoffISO:"2026-06-15T22:00:00Z",time:"6:00 PM",home:"Portugal",away:"Croatia",homeFlag:teamFlagCode("Portugal"),awayFlag:teamFlagCode("Croatia"),venue:"NRG Stadium",group:"Group I",status:"TIMED"},
 ];
 
 const CSS = `
@@ -510,10 +527,10 @@ function LangSwitch({ lang, setLang }) {
   return (
     <div className="lang-switch" onClick={() => setLang(lang === "en" ? "pt" : "en")} title="Switch language / Mudar idioma">
       <div className={"lang-opt " + (lang==="en" ? "active" : "inactive")}>
-        🇺🇸 EN
+        <FlagImg code="us" size="sm"/> EN
       </div>
       <div className={"lang-opt " + (lang==="pt" ? "active" : "inactive")}>
-        🇧🇷 PT
+        <FlagImg code="br" size="sm"/> PT
       </div>
     </div>
   );
@@ -597,7 +614,7 @@ function MatchCard({ match, pick, onPick, result, w, lang }) {
       )}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"10px 0"}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:"1.6rem",lineHeight:1,marginBottom:3}}>{match.homeFlag}</div>
+          <div style={{marginBottom:3}}><FlagImg code={match.homeFlag} /></div>
           <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.home}</div>
         </div>
         <div>
@@ -614,7 +631,7 @@ function MatchCard({ match, pick, onPick, result, w, lang }) {
           )}
         </div>
         <div style={{flex:1,textAlign:"right"}}>
-          <div style={{fontSize:"1.6rem",lineHeight:1,marginBottom:3}}>{match.awayFlag}</div>
+          <div style={{marginBottom:3}}><FlagImg code={match.awayFlag} /></div>
           <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.away}</div>
         </div>
       </div>
@@ -921,7 +938,7 @@ function AdminView({ matches, results, allPicks, weather, onSaveResult, onLogout
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
                     <div>
                       <div style={{color:C.red,fontSize:"0.67rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:3}}>{m.group} · {m.date}</div>
-                      <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.92rem"}}>{m.homeFlag} {m.home} vs {m.away} {m.awayFlag}</div>
+                      <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.92rem",display:"flex",alignItems:"center",gap:6}}><FlagImg code={m.homeFlag} size="sm"/> {m.home} vs {m.away} <FlagImg code={m.awayFlag} size="sm"/></div>
                       <div style={{display:"flex",gap:6,marginTop:7,flexWrap:"wrap"}}>
                         {weather[m.id] && <WeatherBadge w={weather[m.id]} lang={lang} />}
                       </div>
@@ -957,7 +974,7 @@ function AdminView({ matches, results, allPicks, weather, onSaveResult, onLogout
                   const p=entry.picks[m.id], r=results[m.id], pts=p&&r?calcPts(p,r,m.group):null;
                   return (
                     <div key={m.id} style={{display:"flex",justifyContent:"space-between",borderBottom:"1px solid "+C.dimmer,padding:"4px 0"}}>
-                      <span style={{color:C.dim,fontSize:"0.77rem"}}>{m.homeFlag} {m.home} vs {m.away} {m.awayFlag}</span>
+                      <span style={{color:C.dim,fontSize:"0.77rem",display:"flex",alignItems:"center",gap:4}}><FlagImg code={m.homeFlag} size="sm"/> {m.home} vs {m.away} <FlagImg code={m.awayFlag} size="sm"/></span>
                       {p ? <div style={{display:"flex",gap:7,alignItems:"center"}}>
                         <span style={{color:C.muted,fontFamily:"monospace",fontSize:"0.82rem"}}>{p.homeScore}-{p.awayScore}</span>
                         {pts!==null && <PtsBadge pts={pts} />}
@@ -1033,7 +1050,14 @@ function App() {
       catch (e) { setDataError(STRINGS[lang].fixturesError + e.message + STRINGS[lang].usingSample); fm = SAMPLE; }
       setMatches(fm); store.set("wc-matches", fm);
       const wm = {};
-      for (const m of fm.filter(m=>!isLocked(m.kickoffISO)).slice(0,10)) {
+      const now = new Date();
+      const maxDate = new Date(now.getTime() + 15 * 24 * 3600 * 1000); // 15-day forecast window
+      const weatherMatches = fm.filter(m => {
+        if (!m.kickoffISO) return false;
+        const ko = new Date(m.kickoffISO);
+        return ko >= now && ko <= maxDate;
+      }).slice(0, 12);
+      for (const m of weatherMatches) {
         const w = await loadWeather(m.venue, m.kickoffISO);
         if (w) wm[m.id] = w;
         await new Promise(r=>setTimeout(r,150));
