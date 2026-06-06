@@ -501,12 +501,20 @@ async function processQuestion(question){
       `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
 CRITICAL RULES:
 - Answer ONLY "yes" or "no" based on REAL, VERIFIED facts about this specific animal.
-- If you are not 100% certain, answer "no" — never guess or assume.
 - The explanation field MUST always be empty string "". Never add any text.
 - Do NOT confuse this animal with similar animals.
-- HABITAT: Answer based on the animal's NATURAL WILD habitat only. Zoo or captivity does NOT count.
-- PETS: Answer "yes" to pet questions ONLY if it is genuinely common and widespread for people to keep this animal as a pet. One-off or rare exotic cases do NOT count. Dogs, cats, hamsters, goldfish = yes. Lions, kangaroos, dolphins = no.
-- Answer based on what is true for the species generally, not rare edge cases.`,
+- HABITAT: Answer based on where this animal actually EXISTS TODAY in the wild OR as a domesticated species worldwide. For domesticated animals like cows, horses, dogs, cats, sheep, pigs, chickens — they live on EVERY inhabited continent, so answer YES to any continent question except Antarctica.
+- PETS: Answer "yes" ONLY if it is genuinely common and widespread for people to keep this animal as a pet. One-off exotic cases do NOT count.
+- Answer based on the species generally, not rare edge cases.
+- SELF-CHECK: Before finalizing your answer, ask yourself: "Am I 100% sure this is factually correct for ${G.animal.name}?" If there is any doubt, answer "no".`,
+      `Secret animal: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}
+Question: "${question}"
+
+Step 1 - Draft your answer (yes/no) for ${G.animal.name}.
+Step 2 - Verify: Is this definitely true for ${G.animal.name} specifically? Would a wildlife expert agree?
+Step 3 - If verified correct, return yes. If any doubt, return no.
+
+Respond ONLY with this exact JSON (explanation always empty): {"answer":"yes","explanation":"","type":"yes"}`
       `Secret animal: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nThink carefully about whether this is factually true for ${G.animal.name} before answering.\nRespond ONLY with this exact JSON: {"answer":"yes","explanation":"","type":"yes"}`
     );
     document.getElementById('qa-log').removeChild(ph);
