@@ -1,4 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>World Cup Pick'em 2026</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #060E1F; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useCallback, useRef } = React;
+
 
 const PASS = "WORLDCUP2026";
 const ADMIN_PASS = "ADMIN2026";
@@ -970,7 +988,7 @@ function AdminView({ matches, results, allPicks, weather, onSaveResult, onLogout
   );
 }
 
-export default function App() {
+function App() {
   const [view,setView] = useState("entry");
   const [teamName,setTeamName] = useState("");
   const [matches,setMatches] = useState([]);
@@ -1067,3 +1085,10 @@ export default function App() {
   if (view==="admin") return <AdminView matches={matches} results={results} allPicks={allPicks} weather={weather} onSaveResult={handleSaveResult} onLogout={()=>setView("entry")} onRefresh={()=>loadLiveData(apiKeys)} onConfigApis={()=>setShowApiConfig(true)} loading={dataLoading} dataError={dataError} lang={lang} setLang={handleSetLang} />;
   return <ParticipantView teamName={teamName} matches={matches} results={results} allPicks={allPicks} weather={weather} onSavePick={handleSavePick} onLogout={()=>{setTeamName("");setView("entry");}} lang={lang} setLang={handleSetLang} />;
 }
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
