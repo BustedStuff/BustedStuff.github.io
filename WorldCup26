@@ -1,0 +1,1069 @@
+import { useState, useEffect, useCallback } from "react";
+
+const PASS = "WORLDCUP2026";
+const ADMIN_PASS = "ADMIN2026";
+const SCORING = {
+  wrongOrMissed: 0,       // wrong pick or no submission
+  correctWinner: 3,       // correct winning team only
+  correctWinnerLoser: 4,  // correct winner + losing team's goal count
+  correctWinnerWinner: 6, // correct winner + winning team's goal count
+  correctDrawOnly: 6,     // correct draw outcome, wrong exact score
+  correctDrawExact: 10,   // correct draw outcome AND exact score
+};
+
+// ─── Stage multipliers ────────────────────────────────────────────────────────
+const STAGE_MULTIPLIERS = {
+  group:       5,
+  roundOf32:   6,
+  roundOf16:   7,
+  quarterFinal:8,
+  semiFinal:   9,
+  thirdPlace:  9,
+  final:       10,
+};
+
+// Map the raw group/stage string from the API (or sample data) to a multiplier key
+function stageMultiplier(group) {
+  if (!group) return STAGE_MULTIPLIERS.group;
+  const g = group.toUpperCase();
+  if (g.includes("FINAL") && !g.includes("SEMI") && !g.includes("QUARTER") && !g.includes("THIRD")) return STAGE_MULTIPLIERS.final;
+  if (g.includes("THIRD") || g.includes("3RD") || g.includes("THIRD PLACE")) return STAGE_MULTIPLIERS.thirdPlace;
+  if (g.includes("SEMI")) return STAGE_MULTIPLIERS.semiFinal;
+  if (g.includes("QUARTER")) return STAGE_MULTIPLIERS.quarterFinal;
+  if (g.includes("ROUND OF 16") || g.includes("LAST 16") || g.includes("R16")) return STAGE_MULTIPLIERS.roundOf16;
+  if (g.includes("ROUND OF 32") || g.includes("LAST 32") || g.includes("R32")) return STAGE_MULTIPLIERS.roundOf32;
+  // Default: anything with "GROUP" or a letter group label (e.g. "Group A")
+  return STAGE_MULTIPLIERS.group;
+}
+
+// ─── Translations ─────────────────────────────────────────────────────────────
+const STRINGS = {
+  en: {
+    appTitle: "WC PICK'EM",
+    appYear: "2026",
+    worldCup: "WORLD CUP",
+    pickem: "PICK'EM 2026",
+    tagline: "Real-time weather · Picks lock 1 min before kickoff",
+    teamNameLabel: "Your Team Name",
+    teamNamePlaceholder: "e.g. The Offside Trappers",
+    passcodeLabel: "League Passcode",
+    passcodePlaceholder: "Enter passcode",
+    joinBtn: "JOIN LEAGUE",
+    commissionerAccess: "Commissioner Access",
+    adminPasscodePlaceholder: "Admin passcode",
+    enterAdmin: "ENTER ADMIN",
+    score0: "Wrong pick / No submission",
+    score3: "Correct winning team",
+    score4: "Correct winner + losing team goals",
+    score6win: "Correct winner + winning team goals",
+    score6draw: "Correct draw (wrong score)",
+    score10: "Correct draw + exact score",
+    multiplierTitle: "Stage Multipliers",
+    multGroup: "Group Stage",
+    multR32: "Round of 32",
+    multR16: "Round of 16",
+    multQF: "Quarter Finals",
+    multSF: "Semi Finals / 3rd Place",
+    multF: "Final",
+    pts: "pts",
+    myPicks: "My Picks",
+    leaderboard: "Leaderboard",
+    standings: "STANDINGS",
+    open: "Open",
+    locked: "Locked",
+    final: "Final",
+    all: "All",
+    yourPick: "Your Pick",
+    lockIn: "Lock In",
+    update: "Update",
+    saved: "Saved!",
+    noPick: "No pick",
+    picksLocked: "Picks locked",
+    toLock: "to lock",
+    rank: "Rank",
+    picks: "picks",
+    noPicks: "No picks yet.",
+    noMatches: "No matches here.",
+    logout: "Logout",
+    you: "you",
+    results: "Results",
+    allPicks: "All Picks",
+    matchResults: "MATCH RESULTS",
+    allPicksTitle: "ALL PICKS",
+    leaderboardTitle: "LEADERBOARD",
+    save: "Save",
+    refresh: "Refresh",
+    loading: "Loading",
+    apis: "APIs",
+    commissioner: "COMMISSIONER",
+    apiConfig: "API CONFIGURATION",
+    apiTagline: "Connect live data. Both have free tiers.",
+    fdLabel: "football-data.org Key",
+    freeKey: "Get free key",
+    fdNote: "Fixtures, teams, kickoff times · World Cup free tier",
+    weatherNote: "Open-Meteo weather — no key needed, always on",
+    saveLoad: "SAVE AND LOAD LIVE DATA",
+    skipSample: "Skip - use sample data",
+    incorrectPass: "Incorrect passcode.",
+    enterTeam: "Enter a team name.",
+    wrongAdmin: "Wrong admin code.",
+    fixturesError: "Fixtures: ",
+    usingSample: " — using sample data.",
+    vs: "VS",
+    wind: "mph wind",
+  },
+  pt: {
+    appTitle: "PALPITES",
+    appYear: "2026",
+    worldCup: "COPA DO MUNDO",
+    pickem: "PALPITES 2026",
+    tagline: "Clima em tempo real · Palpites encerram 1 min antes do kickoff",
+    teamNameLabel: "Nome do Seu Time",
+    teamNamePlaceholder: "ex: Os Craques do Sofá",
+    passcodeLabel: "Senha da Liga",
+    passcodePlaceholder: "Digite a senha",
+    joinBtn: "ENTRAR NA LIGA",
+    commissionerAccess: "Acesso do Comissário",
+    adminPasscodePlaceholder: "Senha do administrador",
+    enterAdmin: "ENTRAR COMO ADMIN",
+    score0: "Palpite errado / Sem envio",
+    score3: "Acertou o vencedor",
+    score4: "Vencedor + gols do perdedor",
+    score6win: "Vencedor + gols do vencedor",
+    score6draw: "Empate correto (placar errado)",
+    score10: "Empate correto + placar exato",
+    multiplierTitle: "Multiplicadores por Fase",
+    multGroup: "Fase de Grupos",
+    multR32: "Oitavas de Final",
+    multR16: "Quartas de Final (16)",
+    multQF: "Quartas de Final",
+    multSF: "Semi / 3° Lugar",
+    multF: "Final",
+    pts: "pts",
+    myPicks: "Meus Palpites",
+    leaderboard: "Classificação",
+    standings: "CLASSIFICAÇÃO",
+    open: "Abertos",
+    locked: "Encerrados",
+    final: "Finalizados",
+    all: "Todos",
+    yourPick: "Seu Palpite",
+    lockIn: "Confirmar",
+    update: "Atualizar",
+    saved: "Salvo!",
+    noPick: "Sem palpite",
+    picksLocked: "Palpites encerrados",
+    toLock: "para encerrar",
+    rank: "Pos.",
+    picks: "palpites",
+    noPicks: "Nenhum palpite ainda.",
+    noMatches: "Nenhuma partida aqui.",
+    logout: "Sair",
+    you: "você",
+    results: "Resultados",
+    allPicks: "Todos os Palpites",
+    matchResults: "RESULTADOS DAS PARTIDAS",
+    allPicksTitle: "TODOS OS PALPITES",
+    leaderboardTitle: "CLASSIFICAÇÃO",
+    save: "Salvar",
+    refresh: "Atualizar",
+    loading: "Carregando",
+    apis: "APIs",
+    commissioner: "COMISSÁRIO",
+    apiConfig: "CONFIGURAÇÃO DE API",
+    apiTagline: "Conecte dados ao vivo. Ambos têm planos gratuitos.",
+    fdLabel: "Chave football-data.org",
+    freeKey: "Obter chave gratuita",
+    fdNote: "Partidas, times, horários · Copa do Mundo no plano gratuito",
+    weatherNote: "Clima Open-Meteo — sem chave necessária, sempre ativo",
+    saveLoad: "SALVAR E CARREGAR DADOS AO VIVO",
+    skipSample: "Pular - usar dados de exemplo",
+    incorrectPass: "Senha incorreta.",
+    enterTeam: "Digite o nome do seu time.",
+    wrongAdmin: "Código de admin incorreto.",
+    fixturesError: "Partidas: ",
+    usingSample: " — usando dados de exemplo.",
+    vs: "VS",
+    wind: "mph vento",
+  },
+};
+
+const WMO_CODES = {
+  en: {0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Foggy",
+    51:"Light drizzle",53:"Drizzle",61:"Slight rain",63:"Moderate rain",65:"Heavy rain",
+    71:"Slight snow",80:"Showers",81:"Moderate showers",82:"Heavy showers",95:"Thunderstorm"},
+  pt: {0:"Céu limpo",1:"Principalmente limpo",2:"Parcialmente nublado",3:"Nublado",45:"Neblina",
+    51:"Garoa leve",53:"Garoa",61:"Chuva fraca",63:"Chuva moderada",65:"Chuva forte",
+    71:"Neve fraca",80:"Pancadas",81:"Pancadas moderadas",82:"Pancadas fortes",95:"Trovoada"},
+};
+
+const WMO_ICONS = {0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",51:"🌦",53:"🌧",61:"🌧",
+  63:"🌧",65:"⛈",71:"🌨",80:"🌦",81:"🌧",82:"⛈",95:"⛈"};
+
+const C = {
+  navy:"#0B1F3A", navyDeep:"#060E1F", navyMid:"#0F2847", navyCard:"#0D2040",
+  navyBorder:"#1A3560", red:"#C8102E", redDark:"#9A0C23", redGlow:"#C8102E44",
+  gold:"#F0A500", goldLight:"#FFD04A", goldGlow:"#F0A50033", sky:"#1D70B8",
+  skyLight:"#3E94D4", white:"#FFFFFF", offWhite:"#E8EDF5", muted:"#7A9CC0",
+  dim:"#3A5A80", dimmer:"#1E3354",
+};
+
+const VENUE_COORDS = {
+  "MetLife Stadium":         { lat:40.8135, lon:-74.0745, tz:"America/New_York" },
+  "SoFi Stadium":            { lat:33.9534, lon:-118.3392, tz:"America/Los_Angeles" },
+  "AT&T Stadium":            { lat:32.7473, lon:-97.0945, tz:"America/Chicago" },
+  "Gillette Stadium":        { lat:42.0909, lon:-71.2643, tz:"America/New_York" },
+  "Arrowhead Stadium":       { lat:39.0489, lon:-94.4839, tz:"America/Chicago" },
+  "Hard Rock Stadium":       { lat:25.9580, lon:-80.2389, tz:"America/New_York" },
+  "NRG Stadium":             { lat:29.6847, lon:-95.4107, tz:"America/Chicago" },
+  "Rose Bowl":               { lat:34.1614, lon:-118.1676, tz:"America/Los_Angeles" },
+  "Levi's Stadium":          { lat:37.4033, lon:-121.9694, tz:"America/Los_Angeles" },
+  "Lincoln Financial Field": { lat:39.9008, lon:-75.1675, tz:"America/New_York" },
+  "Estadio Azteca":          { lat:19.3029, lon:-99.1505, tz:"America/Mexico_City" },
+  "Estadio Akron":           { lat:20.6690, lon:-103.463, tz:"America/Mexico_City" },
+  "BC Place":                { lat:49.2767, lon:-123.1118, tz:"America/Vancouver" },
+  "BMO Field":               { lat:43.6333, lon:-79.4182, tz:"America/Toronto" },
+};
+
+// All 48 WC 2026 teams + common API name variants from football-data.org
+const FLAGS = {
+  // CONCACAF hosts
+  "United States":"US", "USA":"US", "US":"US",
+  "Canada":"CA",
+  "Mexico":"MX",
+  // CONMEBOL
+  "Argentina":"AR",
+  "Brazil":"BR", "Brasil":"BR",
+  "Uruguay":"UY",
+  "Colombia":"CO",
+  "Ecuador":"EC",
+  "Paraguay":"PY",
+  "Venezuela":"VE",
+  "Chile":"CL",
+  "Peru":"PE",
+  // UEFA
+  "England":"GB",
+  "France":"FR",
+  "Spain":"ES",
+  "Germany":"DE",
+  "Portugal":"PT",
+  "Netherlands":"NL",
+  "Belgium":"BE",
+  "Croatia":"HR",
+  "Austria":"AT",
+  "Switzerland":"CH",
+  "Scotland":"GB",  // uses GB-SCT but GB is safest cross-platform
+  "Norway":"NO",
+  "Sweden":"SE",
+  "Turkey":"TR", "Türkiye":"TR",
+  "Czech Republic":"CZ", "Czechia":"CZ",
+  "Bosnia and Herzegovina":"BA", "Bosnia & Herzegovina":"BA",
+  "Slovenia":"SI",
+  "Slovakia":"SK",
+  "Albania":"AL",
+  "Georgia":"GE",
+  "Romania":"RO",
+  "Hungary":"HU",
+  "Ukraine":"UA",
+  "Serbia":"RS",
+  "Poland":"PL",
+  "Denmark":"DK",
+  "Greece":"GR",
+  "Italy":"IT",   // in case the API returns old matches
+  // AFC
+  "Japan":"JP",
+  "South Korea":"KR", "Korea Republic":"KR",
+  "Australia":"AU",
+  "Iran":"IR", "IR Iran":"IR",
+  "Saudi Arabia":"SA",
+  "Qatar":"QA",
+  "Uzbekistan":"UZ",
+  "Jordan":"JO",
+  // CAF
+  "Morocco":"MA",
+  "Nigeria":"NG",
+  "Senegal":"SN",
+  "Ivory Coast":"CI", "Côte d'Ivoire":"CI", "Cote d'Ivoire":"CI",
+  "Ghana":"GH",
+  "Egypt":"EG",
+  "Tunisia":"TN",
+  "Algeria":"DZ",
+  "Mali":"ML",
+  "Cameroon":"CM",
+  "South Africa":"ZA",
+  "DR Congo":"CD", "Congo DR":"CD", "Democratic Republic of Congo":"CD",
+  "Cape Verde":"CV", "Cabo Verde":"CV",
+  // CONCACAF (non-hosts)
+  "Costa Rica":"CR",
+  "Panama":"PA",
+  "Honduras":"HN",
+  "Guatemala":"GT",
+  "Jamaica":"JM",
+  "Curaçao":"CW", "Curacao":"CW",
+  "Trinidad and Tobago":"TT",
+  "El Salvador":"SV",
+  // OFC
+  "New Zealand":"NZ",
+  // Intercontinental play-off
+  "Iraq":"IQ",
+};
+
+function getFlagEmoji(code) {
+  if (!code) return "🏳";
+  const codePoints = [...code.toUpperCase()].map(c => 0x1F1E0 - 65 + c.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
+
+function teamFlag(name) {
+  if (!name || name === "TBD") return "🏳";
+  // 1. Exact match
+  if (FLAGS[name]) return getFlagEmoji(FLAGS[name]);
+  // 2. Partial match (handles "Korea Republic" matching "South Korea" etc.)
+  for (const [k, v] of Object.entries(FLAGS)) {
+    if (name.includes(k) || k.includes(name)) return getFlagEmoji(v);
+  }
+  return "🏳";
+}
+
+const store = {
+  get: async (k) => { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
+  set: async (k, v) => { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
+};
+
+function calcPts(pick, result, group) {
+  // No result yet or no pick submitted → 0
+  if (!result || result.homeScore == null || result.homeScore === "") return 0;
+  if (!pick || pick.homeScore == null || pick.homeScore === "") return SCORING.wrongOrMissed;
+
+  const rH = parseInt(result.homeScore), rA = parseInt(result.awayScore);
+  const pH = parseInt(pick.homeScore),   pA = parseInt(pick.awayScore);
+
+  const resultIsDraw = rH === rA;
+  const pickIsDraw   = pH === pA;
+  const resultHomeWin = rH > rA;
+  const pickHomeWin   = pH > pA;
+
+  // Did they pick the correct outcome (who wins / draw)?
+  const correctOutcome =
+    (resultIsDraw && pickIsDraw) ||
+    (resultHomeWin && pickHomeWin) ||
+    (!resultIsDraw && !resultHomeWin && !pickIsDraw && !pickHomeWin);
+
+  if (!correctOutcome) return SCORING.wrongOrMissed;
+
+  // ── Draw branch ───────────────────────────────────────────────────────────
+  if (resultIsDraw) {
+    const base = (pH === rH && pA === rA) ? SCORING.correctDrawExact : SCORING.correctDrawOnly;
+    return base * stageMultiplier(group);
+  }
+
+  // ── Win/Loss branch ───────────────────────────────────────────────────────
+  const winnerGoals = resultHomeWin ? rH : rA;
+  const loserGoals  = resultHomeWin ? rA : rH;
+  const pickedWinnerGoals = pickHomeWin ? pH : pA;
+  const pickedLoserGoals  = pickHomeWin ? pA : pH;
+
+  const gotWinnerGoals = pickedWinnerGoals === winnerGoals;
+  const gotLoserGoals  = pickedLoserGoals  === loserGoals;
+
+  let base;
+  if (gotWinnerGoals) base = SCORING.correctWinnerWinner;
+  else if (gotLoserGoals) base = SCORING.correctWinnerLoser;
+  else base = SCORING.correctWinner;
+
+  return base * stageMultiplier(group);
+}
+
+function isLocked(iso) {
+  if (!iso) return false;
+  return new Date() >= new Date(new Date(iso).getTime() - 60000);
+}
+
+function countdown(iso) {
+  if (!iso) return null;
+  const diff = new Date(new Date(iso).getTime() - 60000) - new Date();
+  if (diff <= 0) return null;
+  const h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+  if (h>48) return Math.floor(h/24)+"d "+h%24+"h";
+  if (h>0) return h+"h "+m+"m";
+  if (m>0) return m+"m "+s+"s";
+  return s+"s";
+}
+
+async function loadFixtures(key) {
+  const r = await fetch("https://api.football-data.org/v4/competitions/WC/matches?season=2026", {
+    headers: { "X-Auth-Token": key }
+  });
+  if (!r.ok) throw new Error("football-data.org error " + r.status);
+  const d = await r.json();
+  return (d.matches || []).map((m, i) => ({
+    id: String(m.id || i),
+    date: (m.utcDate || "").split("T")[0],
+    kickoffISO: m.utcDate || "",
+    time: m.utcDate ? new Date(m.utcDate).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/New_York"}) : "",
+    home: m.homeTeam?.shortName || m.homeTeam?.name || "TBD",
+    away: m.awayTeam?.shortName || m.awayTeam?.name || "TBD",
+    homeFlag: teamFlag(m.homeTeam?.name),
+    awayFlag: teamFlag(m.awayTeam?.name),
+    venue: m.venue || "TBD",
+    group: m.group || m.stage || "Group Stage",
+    status: m.status || "TIMED",
+  }));
+}
+
+
+async function loadWeather(venue, iso) {
+  const c = VENUE_COORDS[venue];
+  if (!c || !iso) return null;
+  const date = iso.split("T")[0];
+  try {
+    const url = "https://api.open-meteo.com/v1/forecast?latitude="+c.lat+"&longitude="+c.lon+
+      "&hourly=temperature_2m,weathercode,windspeed_10m,precipitation_probability"+
+      "&timezone="+encodeURIComponent(c.tz)+"&start_date="+date+"&end_date="+date;
+    const r = await fetch(url);
+    const d = await r.json();
+    const lh = parseInt(new Date(iso).toLocaleString("en-US",{timeZone:c.tz,hour:"2-digit",hour12:false})) || 12;
+    const idx = Math.min(lh, (d.hourly?.time?.length || 1) - 1);
+    const tc = d.hourly?.temperature_2m?.[idx];
+    return {
+      temp: tc != null ? Math.round(tc * 9/5 + 32) : null,
+      code: d.hourly?.weathercode?.[idx],
+      wind: Math.round((d.hourly?.windspeed_10m?.[idx] || 0) * 0.621),
+      precip: d.hourly?.precipitation_probability?.[idx] || 0,
+    };
+  } catch { return null; }
+}
+
+const SAMPLE = [
+  {id:"s1",date:"2026-06-11",kickoffISO:"2026-06-11T22:00:00Z",time:"6:00 PM",home:"Mexico",away:"South Africa",homeFlag:getFlagEmoji("MX"),awayFlag:getFlagEmoji("ZA"),venue:"Estadio Azteca",group:"Group A",status:"TIMED"},
+  {id:"s2",date:"2026-06-12",kickoffISO:"2026-06-12T19:00:00Z",time:"3:00 PM",home:"USA",away:"Serbia",homeFlag:getFlagEmoji("US"),awayFlag:getFlagEmoji("RS"),venue:"SoFi Stadium",group:"Group C",status:"TIMED"},
+  {id:"s3",date:"2026-06-12",kickoffISO:"2026-06-12T22:00:00Z",time:"6:00 PM",home:"Argentina",away:"Slovakia",homeFlag:getFlagEmoji("AR"),awayFlag:getFlagEmoji("SK"),venue:"MetLife Stadium",group:"Group D",status:"TIMED"},
+  {id:"s4",date:"2026-06-13",kickoffISO:"2026-06-13T16:00:00Z",time:"12:00 PM",home:"Brazil",away:"Germany",homeFlag:getFlagEmoji("BR"),awayFlag:getFlagEmoji("DE"),venue:"Rose Bowl",group:"Group F",status:"TIMED"},
+  {id:"s5",date:"2026-06-14",kickoffISO:"2026-06-14T19:00:00Z",time:"3:00 PM",home:"France",away:"Albania",homeFlag:getFlagEmoji("FR"),awayFlag:getFlagEmoji("AL"),venue:"Gillette Stadium",group:"Group E",status:"TIMED"},
+  {id:"s6",date:"2026-06-14",kickoffISO:"2026-06-14T22:00:00Z",time:"6:00 PM",home:"England",away:"Tunisia",homeFlag:getFlagEmoji("GB"),awayFlag:getFlagEmoji("TN"),venue:"AT&T Stadium",group:"Group G",status:"TIMED"},
+  {id:"s7",date:"2026-06-15",kickoffISO:"2026-06-15T19:00:00Z",time:"3:00 PM",home:"Spain",away:"Uzbekistan",homeFlag:getFlagEmoji("ES"),awayFlag:getFlagEmoji("UZ"),venue:"Hard Rock Stadium",group:"Group H",status:"TIMED"},
+  {id:"s8",date:"2026-06-15",kickoffISO:"2026-06-15T22:00:00Z",time:"6:00 PM",home:"Portugal",away:"Croatia",homeFlag:getFlagEmoji("PT"),awayFlag:getFlagEmoji("HR"),venue:"NRG Stadium",group:"Group I",status:"TIMED"},
+];
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .btn { cursor: pointer; transition: all .18s; }
+  .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  input[type=number] { -moz-appearance: textfield; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input:focus { outline: none !important; border-color: #F0A500 !important; box-shadow: 0 0 0 2px #F0A50033 !important; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #060E1F; }
+  ::-webkit-scrollbar-thumb { background: #1E3354; border-radius: 3px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .lang-switch { display:flex; align-items:center; gap:6px; background:#1E3354; border:1px solid #1A3560; border-radius:20px; padding:3px; cursor:pointer; }
+  .lang-opt { padding:4px 10px; border-radius:16px; font-size:0.72rem; font-weight:700; letter-spacing:.5px; transition:all .18s; display:flex; align-items:center; gap:5px; font-family:'Barlow Condensed',sans-serif; }
+  .lang-opt.active { background:#C8102E; color:#fff; }
+  .lang-opt.inactive { color:#3A5A80; }
+  .lang-opt.inactive:hover { color:#7A9CC0; }
+`;
+
+function PitchBg() {
+  return React.createElement("svg", {
+    style:{position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",opacity:.04,zIndex:0},
+    xmlns:"http://www.w3.org/2000/svg"
+  },
+    React.createElement("defs", null,
+      React.createElement("pattern", {id:"pitch",x:"0",y:"0",width:"120",height:"120",patternUnits:"userSpaceOnUse"},
+        React.createElement("rect",{x:"0",y:"0",width:"120",height:"120",fill:"none",stroke:"#fff",strokeWidth:".6"}),
+        React.createElement("circle",{cx:"60",cy:"60",r:"28",fill:"none",stroke:"#fff",strokeWidth:".6"}),
+        React.createElement("circle",{cx:"60",cy:"60",r:"2",fill:"#fff"}),
+        React.createElement("line",{x1:"60",y1:"0",x2:"60",y2:"120",stroke:"#fff",strokeWidth:".4"})
+      )
+    ),
+    React.createElement("rect",{width:"100%",height:"100%",fill:"url(#pitch)"})
+  );
+}
+
+// ─── Language Switch ──────────────────────────────────────────────────────────
+function LangSwitch({ lang, setLang }) {
+  return (
+    <div className="lang-switch" onClick={() => setLang(lang === "en" ? "pt" : "en")} title="Switch language / Mudar idioma">
+      <div className={"lang-opt " + (lang==="en" ? "active" : "inactive")}>
+        {getFlagEmoji("US")} EN
+      </div>
+      <div className={"lang-opt " + (lang==="pt" ? "active" : "inactive")}>
+        {getFlagEmoji("BR")} PT
+      </div>
+    </div>
+  );
+}
+
+function WeatherBadge({ w, lang }) {
+  const t = STRINGS[lang];
+  if (!w) return null;
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:5,background:C.dimmer,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"4px 10px",fontSize:"0.74rem",fontFamily:"Inter,sans-serif"}}>
+      <span>{WMO_ICONS[w.code] || "?"}</span>
+      <span style={{color:C.offWhite,fontWeight:600}}>{w.temp}°F</span>
+      <span style={{color:C.dim}}>·</span>
+      <span style={{color:C.muted}}>{WMO_CODES[lang][w.code] || ""}</span>
+      <span style={{color:C.dim}}>·</span>
+      <span style={{color:C.muted}}>{w.wind} {t.wind}</span>
+      {w.precip > 15 && <><span style={{color:C.dim}}>·</span><span style={{color:C.skyLight}}>{w.precip}%</span></>}
+    </div>
+  );
+}
+
+
+function Countdown({ iso, lang }) {
+  const t = STRINGS[lang];
+  const [tl, setTl] = useState(countdown(iso));
+  useEffect(() => {
+    const timer = setInterval(() => setTl(countdown(iso)), 1000);
+    return () => clearInterval(timer);
+  }, [iso]);
+  if (!tl) return null;
+  const urgent = !tl.includes("d") && !tl.includes("h");
+  return (
+    <span style={{background:urgent?C.redDark:C.dimmer,border:"1px solid "+(urgent?C.red:C.navyBorder),borderRadius:4,padding:"2px 8px",color:urgent?"#ffaaaa":C.gold,fontSize:"0.7rem",fontFamily:"monospace",fontWeight:700,animation:urgent?"pulse 1s infinite":"none"}}>
+      {tl} {t.toLock}
+    </span>
+  );
+}
+
+function PtsBadge({ pts }) {
+  const [bg,br,col] = pts>=10 ? ["#0e2a14","#1a5020","#5de890"] : pts>=6 ? ["#2a1f00","#503800",C.gold] : pts>=3 ? [C.dimmer,C.navyBorder,C.skyLight] : ["transparent",C.dim,C.dim];
+  return <span style={{background:bg,border:"1px solid "+br,color:col,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:"0.75rem",fontFamily:"monospace"}}>+{pts}pts</span>;
+}
+
+function MatchCard({ match, pick, onPick, result, w, lang }) {
+  const t = STRINGS[lang];
+  const [hs, setHs] = useState(pick?.homeScore ?? "");
+  const [as, setAs] = useState(pick?.awayScore ?? "");
+  const [saved, setSaved] = useState(false);
+  const locked = isLocked(match.kickoffISO);
+  const pts = pick && result ? calcPts(pick, result, match.group) : null;
+  const hasResult = result != null && result.homeScore != null && result.homeScore !== "";
+  const submit = () => {
+    if (hs === "" || as === "") return;
+    onPick(match.id, {homeScore: parseInt(hs), awayScore: parseInt(as)});
+    setSaved(true); setTimeout(() => setSaved(false), 2200);
+  };
+  const topBar = hasResult ? (pts > 0 ? "linear-gradient(90deg,"+C.gold+",#5de890)" : C.dim) : locked ? C.dimmer : "linear-gradient(90deg,"+C.red+","+C.sky+")";
+  const inp = {width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.25rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"};
+  const matchDate = match.kickoffISO ? new Date(match.kickoffISO).toLocaleDateString(lang==="pt"?"pt-BR":"en-US",{weekday:"short",month:"short",day:"numeric"}) : match.date;
+  return (
+    <div style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:"16px 18px",marginBottom:9,position:"relative",overflow:"hidden",boxShadow:"0 4px 16px "+C.navyDeep+"88"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:topBar}} />
+      <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:5,marginBottom:10}}>
+        <div>
+          <div style={{color:C.red,fontSize:"0.67rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",display:"flex",alignItems:"center",gap:6}}>
+              {match.group}
+              <span style={{background:C.dimmer,color:C.gold,borderRadius:3,padding:"1px 5px",fontSize:"0.62rem",letterSpacing:0}}>x{stageMultiplier(match.group)}</span>
+            </div>
+          <div style={{color:C.dim,fontSize:"0.67rem",marginTop:1}}>📍 {match.venue}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+          <div style={{color:C.muted,fontSize:"0.71rem"}}>{matchDate} · {match.time} ET</div>
+          {!locked && !hasResult && <Countdown iso={match.kickoffISO} lang={lang} />}
+          {locked && !hasResult && <span style={{color:C.dim,fontSize:"0.67rem"}}>{t.picksLocked}</span>}
+        </div>
+      </div>
+      {(w || o) && (
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+          {w && <WeatherBadge w={w} lang={lang} />}
+        </div>
+      )}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"10px 0"}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:"1.6rem",lineHeight:1,marginBottom:3}}>{match.homeFlag}</div>
+          <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.home}</div>
+        </div>
+        <div>
+          {hasResult ? (
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{color:C.gold,fontFamily:"monospace",fontSize:"1.8rem",fontWeight:700}}>{result.homeScore}</span>
+              <span style={{color:C.dim}}>-</span>
+              <span style={{color:C.gold,fontFamily:"monospace",fontSize:"1.8rem",fontWeight:700}}>{result.awayScore}</span>
+            </div>
+          ) : (
+            <div style={{background:C.navyDeep,border:"1px solid "+C.dimmer,borderRadius:6,padding:"6px 14px"}}>
+              <span style={{color:C.dimmer,fontSize:"0.85rem",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2}}>{t.vs}</span>
+            </div>
+          )}
+        </div>
+        <div style={{flex:1,textAlign:"right"}}>
+          <div style={{fontSize:"1.6rem",lineHeight:1,marginBottom:3}}>{match.awayFlag}</div>
+          <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.away}</div>
+        </div>
+      </div>
+      <div style={{marginTop:10,borderTop:"1px solid "+C.dimmer,paddingTop:11,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
+        <span style={{color:C.dim,fontSize:"0.71rem",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif"}}>{t.yourPick}</span>
+        {locked || hasResult ? (
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {pick ? (
+              <>
+                <span style={{color:C.muted,fontFamily:"monospace",fontSize:"0.95rem"}}>{pick.homeScore}-{pick.awayScore}</span>
+                {pts !== null && <PtsBadge pts={pts} />}
+              </>
+            ) : <span style={{color:C.dimmer,fontSize:"0.78rem",fontStyle:"italic"}}>{t.noPick}</span>}
+          </div>
+        ) : (
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <input type="number" min={0} max={20} value={hs} onChange={e=>setHs(e.target.value)} style={inp} />
+            <span style={{color:C.dim}}>-</span>
+            <input type="number" min={0} max={20} value={as} onChange={e=>setAs(e.target.value)} style={inp} />
+            <button className="btn" onClick={submit} style={{
+              background: saved ? "#1a4a20" : (hs !== "" && as !== "") ? "linear-gradient(135deg,"+C.red+","+C.redDark+")" : C.dimmer,
+              color: saved ? "#5de890" : C.white,
+              border:"none",borderRadius:6,padding:"7px 13px",fontSize:"0.78rem",fontWeight:700,
+              opacity: (hs===""||as==="") ? 0.4 : 1,
+              boxShadow: (hs!==""&&as!==""&&!saved) ? "0 2px 10px "+C.redGlow : "none",
+            }}>
+              {saved ? t.saved : pick ? t.update : t.lockIn}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TopBar({ tag, right, lang, setLang }) {
+  const t = STRINGS[lang];
+  return (
+    <div style={{background:C.navyDeep,borderBottom:"1px solid "+C.navyBorder,padding:"13px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 20px "+C.navyDeep,flexWrap:"wrap",gap:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.35rem",color:C.gold,letterSpacing:4}}>{t.appTitle}</span>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.35rem",color:C.white,letterSpacing:2}}>{t.appYear}</span>
+        {tag && <span style={{background:C.red,color:C.white,fontSize:"0.62rem",fontWeight:700,borderRadius:3,padding:"2px 7px",letterSpacing:1}}>{tag}</span>}
+        <LangSwitch lang={lang} setLang={setLang} />
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>{right}</div>
+    </div>
+  );
+}
+
+function Tabs({ tabs, active, onChange }) {
+  return (
+    <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+      {tabs.map(([k,l]) => (
+        <button key={k} className="btn" onClick={()=>onChange(k)} style={{
+          background: active===k ? "linear-gradient(135deg,"+C.red+","+C.redDark+")" : "transparent",
+          color: active===k ? C.white : C.dim,
+          border: active===k ? "none" : "1px solid "+C.dimmer,
+          borderRadius:7,padding:"6px 16px",fontSize:"0.78rem",fontWeight:700,letterSpacing:1,
+          textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",
+          boxShadow: active===k ? "0 2px 12px "+C.redGlow : "none",
+        }}>{l}</button>
+      ))}
+    </div>
+  );
+}
+
+function Filters({ filters, active, onChange }) {
+  return (
+    <div style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap"}}>
+      {filters.map(([k,l]) => (
+        <button key={k} className="btn" onClick={()=>onChange(k)} style={{
+          background: active===k ? C.dimmer : "transparent",
+          color: active===k ? C.gold : C.dim,
+          border: "1px solid "+(active===k ? C.navyBorder : C.dimmer),
+          borderRadius:6,padding:"4px 12px",fontSize:"0.72rem",fontWeight:600,
+        }}>{l}</button>
+      ))}
+    </div>
+  );
+}
+
+function ApiConfig({ onSave, existing, lang }) {
+  const t = STRINGS[lang];
+  const [fd, setFd] = useState(existing?.footballDataKey || "");
+  return (
+    <div style={{background:C.navyCard,border:"1px solid "+C.navyBorder,borderRadius:16,padding:32,maxWidth:480,margin:"0 auto",fontFamily:"Inter,sans-serif",position:"relative",zIndex:1}}>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.8rem",color:C.gold,letterSpacing:4,marginBottom:4}}>{t.apiConfig}</div>
+      <p style={{color:C.muted,fontSize:"0.83rem",marginBottom:24}}>{t.apiTagline}</p>
+      <div style={{marginBottom:18}}>
+        <label style={{color:C.muted,fontSize:"0.74rem",fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",display:"block",marginBottom:6}}>
+          {t.fdLabel} — <a href="https://www.football-data.org/client/register" target="_blank" rel="noreferrer" style={{color:C.gold,fontSize:"0.7rem"}}>{t.freeKey}</a>
+        </label>
+        <input value={fd} onChange={e=>setFd(e.target.value)} placeholder="Paste your API key here"
+          style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"11px 14px",color:C.white,fontSize:"0.9rem"}}/>
+        <div style={{color:C.dim,fontSize:"0.71rem",marginTop:4}}>{t.fdNote}</div>
+      </div>
+      <div style={{background:"#0c2010",border:"1px solid #1a4020",borderRadius:8,padding:"10px 14px",marginBottom:22}}>
+        <div style={{color:"#5de890",fontSize:"0.78rem"}}>{t.weatherNote}</div>
+      </div>
+      <button className="btn" onClick={()=>onSave({footballDataKey:fd})} style={{width:"100%",background:"linear-gradient(135deg,"+C.gold+","+C.goldLight+")",color:C.navyDeep,border:"none",borderRadius:8,padding:14,fontWeight:700,fontSize:"1rem",letterSpacing:1.5,fontFamily:"'Barlow Condensed',sans-serif",marginBottom:10}}>
+        {t.saveLoad}
+      </button>
+      <button className="btn" onClick={()=>onSave(null)} style={{width:"100%",background:"transparent",border:"1px solid "+C.navyBorder,color:C.dim,borderRadius:8,padding:10,fontSize:"0.83rem"}}>
+        {t.skipSample}
+      </button>
+    </div>
+  );
+}
+
+function EntryScreen({ onEnter, onAdmin, lang, setLang }) {
+  const t = STRINGS[lang];
+  const [code,setCode]=useState(""), [team,setTeam]=useState(""), [err,setErr]=useState("");
+  const [acode,setAcode]=useState(""), [showA,setShowA]=useState(false);
+  const tryJoin = () => {
+    if (code.trim().toUpperCase() !== PASS) return setErr(t.incorrectPass);
+    if (!team.trim()) return setErr(t.enterTeam);
+    setErr(""); onEnter(team.trim());
+  };
+  const tryAdmin = () => {
+    if (acode.trim().toUpperCase() !== ADMIN_PASS) return setErr(t.wrongAdmin);
+    setErr(""); onAdmin();
+  };
+  return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 0%, #142e5e 0%, "+C.navy+" 35%, "+C.navyDeep+" 70%, #0a0010 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif",padding:24,position:"relative",overflow:"hidden"}}>
+      <style>{CSS}</style>
+      <PitchBg />
+      <div style={{position:"fixed",top:0,left:0,right:0,height:4,background:"linear-gradient(90deg,"+C.red+","+C.redDark+" 40%,"+C.red+")",zIndex:10}} />
+
+      {/* Lang switch top-right */}
+      <div style={{position:"fixed",top:14,right:18,zIndex:30}}>
+        <LangSwitch lang={lang} setLang={setLang} />
+      </div>
+
+      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-55%)",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle, "+C.sky+"18 0%, transparent 65%)",pointerEvents:"none"}} />
+
+      <div style={{textAlign:"center",marginBottom:44,position:"relative",zIndex:1,animation:"fadeUp .5s ease both"}}>
+        <div style={{fontSize:"5rem",lineHeight:1,marginBottom:6,filter:"drop-shadow(0 0 24px "+C.gold+"88)"}}>🏆</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14,marginBottom:4}}>
+          <div style={{height:2,width:60,background:"linear-gradient(90deg,transparent,"+C.red+")"}} />
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(2.8rem,10vw,6rem)",color:C.white,letterSpacing:8,lineHeight:.9,textShadow:"0 0 40px "+C.sky+"66"}}>{t.worldCup}</div>
+          <div style={{height:2,width:60,background:"linear-gradient(90deg,"+C.red+",transparent)"}} />
+        </div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(1.6rem,4vw,2.8rem)",background:"linear-gradient(90deg,"+C.gold+","+C.goldLight+","+C.gold+")",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:10,margin:"4px 0 10px"}}>{t.pickem}</div>
+        <div style={{color:C.muted,fontSize:"0.8rem"}}>{t.tagline}</div>
+      </div>
+
+      <div style={{background:"linear-gradient(145deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:16,padding:34,width:"100%",maxWidth:400,position:"relative",zIndex:1,boxShadow:"0 24px 60px "+C.navyDeep+"cc",animation:"fadeUp .5s .1s ease both",animationFillMode:"both"}}>
+        <div style={{position:"absolute",top:0,left:24,right:24,height:2,background:"linear-gradient(90deg,transparent,"+C.gold+",transparent)",borderRadius:2}} />
+        <div style={{marginBottom:16}}>
+          <label style={{color:C.muted,fontSize:"0.73rem",fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:7}}>{t.teamNameLabel}</label>
+          <input value={team} onChange={e=>setTeam(e.target.value)} placeholder={t.teamNamePlaceholder}
+            style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"12px 14px",color:C.white,fontSize:"0.95rem"}} />
+        </div>
+        <div style={{marginBottom:22}}>
+          <label style={{color:C.muted,fontSize:"0.73rem",fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:7}}>{t.passcodeLabel}</label>
+          <input value={code} onChange={e=>setCode(e.target.value)} type="password" placeholder={t.passcodePlaceholder}
+            onKeyDown={e=>e.key==="Enter"&&tryJoin()}
+            style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"12px 14px",color:C.white,fontSize:"0.95rem"}} />
+        </div>
+        {err && <div style={{color:"#ff7070",fontSize:"0.82rem",marginBottom:12,background:"#2a080a",border:"1px solid #4a1018",borderRadius:6,padding:"7px 12px"}}>{err}</div>}
+        <button className="btn" onClick={tryJoin} style={{width:"100%",background:"linear-gradient(135deg,"+C.red+","+C.redDark+")",color:C.white,border:"none",borderRadius:8,padding:13,fontSize:"1rem",fontWeight:700,letterSpacing:1.5,fontFamily:"'Barlow Condensed',sans-serif",boxShadow:"0 4px 20px "+C.redGlow}}>
+          {t.joinBtn}
+        </button>
+        <div style={{marginTop:22,borderTop:"1px solid "+C.dimmer,paddingTop:18}}>
+          {!showA ? (
+            <button className="btn" onClick={()=>setShowA(true)} style={{width:"100%",background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:8,padding:9,fontSize:"0.8rem"}}>{t.commissionerAccess}</button>
+          ) : (
+            <>
+              <input value={acode} onChange={e=>setAcode(e.target.value)} type="password" placeholder={t.adminPasscodePlaceholder}
+                onKeyDown={e=>e.key==="Enter"&&tryAdmin()}
+                style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"10px 14px",color:C.white,fontSize:"0.88rem",marginBottom:8}} />
+              <button className="btn" onClick={tryAdmin} style={{width:"100%",background:C.dimmer,color:C.gold,border:"1px solid "+C.gold+"44",borderRadius:8,padding:10,fontSize:"0.88rem",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.enterAdmin}</button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={{marginTop:28,position:"relative",zIndex:1,maxWidth:480,width:"100%"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px",color:C.dim,fontSize:"0.74rem",marginBottom:16}}>
+          <span style={{color:C.dimmer}}>{t.score0}: <b>0 {t.pts}</b></span>
+          <span>{t.score3}: <b style={{color:C.skyLight}}>3 {t.pts}</b></span>
+          <span>{t.score4}: <b style={{color:C.gold}}>4 {t.pts}</b></span>
+          <span>{t.score6win}: <b style={{color:C.gold}}>6 {t.pts}</b></span>
+          <span>{t.score6draw}: <b style={{color:C.gold}}>6 {t.pts}</b></span>
+          <span>{t.score10}: <b style={{color:"#5de890"}}>10 {t.pts}</b></span>
+        </div>
+        <div style={{background:C.dimmer,borderRadius:8,padding:"10px 14px"}}>
+          <div style={{color:C.muted,fontSize:"0.72rem",fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:7}}>{t.multiplierTitle}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"5px 12px",fontSize:"0.72rem",color:C.dim}}>
+            <span>{t.multGroup}: <b style={{color:C.muted}}>x5</b></span>
+            <span>{t.multR32}: <b style={{color:C.muted}}>x6</b></span>
+            <span>{t.multR16}: <b style={{color:C.muted}}>x7</b></span>
+            <span>{t.multQF}: <b style={{color:C.gold}}>x8</b></span>
+            <span>{t.multSF}: <b style={{color:C.gold}}>x9</b></span>
+            <span>{t.multF}: <b style={{color:"#5de890"}}>x10</b></span>
+          </div>
+        </div>
+      </div>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:10}} />
+    </div>
+  );
+}
+
+function ParticipantView({ teamName, matches, results, allPicks, weather, onSavePick, onLogout, lang, setLang }) {
+  const t = STRINGS[lang];
+  const [tab, setTab] = useState("picks");
+  const [filter, setFilter] = useState("upcoming");
+  const myPicks = allPicks[teamName] || {};
+  const matchById = Object.fromEntries(matches.map(m => [m.id, m]));
+  const totalPts = Object.entries(myPicks).reduce((s,[mid,p]) => s + calcPts(p, results[mid], matchById[mid]?.group), 0);
+  const board = Object.entries(allPicks).map(([tm,picks]) => ({
+    tm, pts:Object.entries(picks).reduce((s,[mid,p])=>s+calcPts(p,results[mid],matchById[mid]?.group),0), n:Object.keys(picks).length
+  })).sort((a,b)=>b.pts-a.pts);
+  const rank = board.findIndex(e=>e.tm===teamName) + 1;
+  const fm = matches.filter(m => {
+    if (filter==="all") return true;
+    if (filter==="upcoming") return !results[m.id] && !isLocked(m.kickoffISO);
+    if (filter==="locked") return isLocked(m.kickoffISO) && !results[m.id];
+    return !!results[m.id];
+  });
+  const right = (
+    <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <div style={{textAlign:"right"}}>
+        <div style={{color:C.gold,fontWeight:700,fontFamily:"monospace",fontSize:"1.05rem"}}>{totalPts} {t.pts}</div>
+        <div style={{color:C.dim,fontSize:"0.67rem"}}>{t.rank} #{rank} / {board.length}</div>
+      </div>
+      <button className="btn" onClick={onLogout} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.logout}</button>
+    </div>
+  );
+  return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 0%, #142e5e 0%, "+C.navy+" 40%, "+C.navyDeep+" 100%)",fontFamily:"Inter,sans-serif",paddingBottom:60,position:"relative"}}>
+      <style>{CSS}</style>
+      <PitchBg />
+      <div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:30}} />
+      <TopBar right={right} lang={lang} setLang={setLang} />
+      <div style={{maxWidth:720,margin:"0 auto",padding:"20px 12px",position:"relative",zIndex:1}}>
+        <Tabs tabs={[["picks",t.myPicks],["leaderboard",t.leaderboard]]} active={tab} onChange={setTab} />
+        {tab==="picks" && (
+          <>
+            <Filters filters={[["upcoming",t.open],["locked",t.locked],["completed",t.final],["all",t.all]]} active={filter} onChange={setFilter} />
+            {fm.length===0 && <p style={{color:C.dim,fontStyle:"italic"}}>{t.noMatches}</p>}
+            {fm.map(m => <MatchCard key={m.id} match={m} pick={myPicks[m.id]} onPick={onSavePick} result={results[m.id]} w={weather[m.id]} lang={lang} />)}
+          </>
+        )}
+        {tab==="leaderboard" && (
+          <>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.standings}</div>
+            {board.length===0 && <p style={{color:C.dim}}>{t.noPicks}</p>}
+            {board.map((e,i) => (
+              <div key={e.tm} style={{background:e.tm===teamName?"linear-gradient(135deg,#142e14,"+C.navyCard+")":"linear-gradient(135deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+(e.tm===teamName?"#2a4a2a":C.navyBorder),borderRadius:10,padding:"13px 18px",marginBottom:7,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}>
+                {e.tm===teamName && <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:"linear-gradient("+C.gold+",#5de890)"}} />}
+                <span style={{fontSize:"0.95rem",width:32,textAlign:"center",color:i===0?C.gold:i===1?"#bbb":i===2?"#cd7f32":C.dim,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{i===0?"1°":i===1?"2°":i===2?"3°":"#"+(i+1)}</span>
+                <div style={{flex:1}}>
+                  <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{e.tm}
+                    {e.tm===teamName && <span style={{color:"#5de890",fontSize:"0.67rem",marginLeft:6,background:"#0e2a14",padding:"1px 6px",borderRadius:3}}>{t.you}</span>}
+                  </div>
+                  <div style={{color:C.dim,fontSize:"0.7rem"}}>{e.n} {t.picks}</div>
+                </div>
+                <div style={{fontFamily:"monospace",fontSize:"1.15rem",fontWeight:700,color:C.gold}}>{e.pts} {t.pts}</div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminView({ matches, results, allPicks, weather, onSaveResult, onLogout, onRefresh, onConfigApis, loading, dataError, lang, setLang }) {
+  const t = STRINGS[lang];
+  const [tab, setTab] = useState("results");
+  const [edits, setEdits] = useState({});
+  const matchById = Object.fromEntries(matches.map(m => [m.id, m]));
+  const board = Object.entries(allPicks).map(([tm,picks]) => ({
+    tm, pts:Object.entries(picks).reduce((s,[mid,p])=>s+calcPts(p,results[mid],matchById[mid]?.group),0), n:Object.keys(picks).length, picks
+  })).sort((a,b)=>b.pts-a.pts);
+  const right = (
+    <div style={{display:"flex",gap:7}}>
+      <button className="btn" onClick={onRefresh} disabled={loading} style={{background:C.dimmer,color:C.gold,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem",fontWeight:600,opacity:loading?.5:1}}>
+        <span style={{display:"inline-block",animation:loading?"spin 1s linear infinite":"none"}}>↻</span> {loading?t.loading:t.refresh}
+      </button>
+      <button className="btn" onClick={onConfigApis} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.apis}</button>
+      <button className="btn" onClick={onLogout} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.logout}</button>
+    </div>
+  );
+  return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 0%, #142e5e 0%, "+C.navy+" 40%, "+C.navyDeep+" 100%)",fontFamily:"Inter,sans-serif",paddingBottom:60,position:"relative"}}>
+      <style>{CSS}</style>
+      <PitchBg />
+      <div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:30}} />
+      <TopBar tag={t.commissioner} right={right} lang={lang} setLang={setLang} />
+      {dataError && <div style={{background:"#1a0812",border:"1px solid "+C.red+"44",borderRadius:8,margin:"12px 16px 0",padding:"8px 14px",color:"#ff9090",fontSize:"0.78rem",position:"relative",zIndex:1}}>{dataError}</div>}
+      <div style={{maxWidth:900,margin:"0 auto",padding:"20px 12px",position:"relative",zIndex:1}}>
+        <Tabs tabs={[["results",t.results],["picks",t.allPicks],["leaderboard",t.leaderboard]]} active={tab} onChange={setTab} />
+        {tab==="results" && (
+          <>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.matchResults}</div>
+            {matches.map(m => {
+              const sv = results[m.id];
+              const ed = edits[m.id] ?? {homeScore:sv?.homeScore??"",awayScore:sv?.awayScore??""};
+              return (
+                <div key={m.id} style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:"15px 18px",marginBottom:9}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+                    <div>
+                      <div style={{color:C.red,fontSize:"0.67rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:3}}>{m.group} · {m.date}</div>
+                      <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.92rem"}}>{m.homeFlag} {m.home} vs {m.away} {m.awayFlag}</div>
+                      <div style={{display:"flex",gap:6,marginTop:7,flexWrap:"wrap"}}>
+                        {weather[m.id] && <WeatherBadge w={weather[m.id]} lang={lang} />}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+                      <input type="number" min={0} max={20} value={ed.homeScore} onChange={e=>setEdits(p=>({...p,[m.id]:{...ed,homeScore:e.target.value}}))}
+                        style={{width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.15rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"}} />
+                      <span style={{color:C.dim}}>-</span>
+                      <input type="number" min={0} max={20} value={ed.awayScore} onChange={e=>setEdits(p=>({...p,[m.id]:{...ed,awayScore:e.target.value}}))}
+                        style={{width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.15rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"}} />
+                      <button className="btn" onClick={()=>onSaveResult(m.id,ed)} style={{background:"linear-gradient(135deg,"+C.red+","+C.redDark+")",color:C.white,border:"none",borderRadius:6,padding:"7px 14px",fontSize:"0.8rem",fontWeight:700,boxShadow:"0 2px 10px "+C.redGlow}}>
+                        {sv ? t.update : t.save}
+                      </button>
+                      {sv && <span style={{color:"#5de890",fontSize:"0.75rem"}}>{sv.homeScore}-{sv.awayScore}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+        {tab==="picks" && (
+          <>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.allPicksTitle}</div>
+            {board.length===0 && <p style={{color:C.dim}}>{t.noPicks}</p>}
+            {board.map(entry => (
+              <div key={entry.tm} style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:16,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                  <span style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{entry.tm}</span>
+                  <span style={{color:C.gold,fontFamily:"monospace",fontWeight:700,fontSize:"0.88rem"}}>{entry.pts} {t.pts} · {entry.n} {t.picks}</span>
+                </div>
+                {matches.map(m => {
+                  const p=entry.picks[m.id], r=results[m.id], pts=p&&r?calcPts(p,r,m.group):null;
+                  return (
+                    <div key={m.id} style={{display:"flex",justifyContent:"space-between",borderBottom:"1px solid "+C.dimmer,padding:"4px 0"}}>
+                      <span style={{color:C.dim,fontSize:"0.77rem"}}>{m.homeFlag} {m.home} vs {m.away} {m.awayFlag}</span>
+                      {p ? <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                        <span style={{color:C.muted,fontFamily:"monospace",fontSize:"0.82rem"}}>{p.homeScore}-{p.awayScore}</span>
+                        {pts!==null && <PtsBadge pts={pts} />}
+                      </div> : <span style={{color:C.dimmer,fontSize:"0.77rem"}}>-</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </>
+        )}
+        {tab==="leaderboard" && (
+          <>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.leaderboardTitle}</div>
+            {board.map((e,i) => (
+              <div key={e.tm} style={{background:"linear-gradient(135deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:10,padding:"13px 18px",marginBottom:7,display:"flex",alignItems:"center",gap:14}}>
+                <span style={{color:i===0?C.gold:i===1?"#bbb":i===2?"#cd7f32":C.dim,fontSize:"0.95rem",width:32,textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{i===0?"1°":i===1?"2°":i===2?"3°":"#"+(i+1)}</span>
+                <div style={{flex:1}}>
+                  <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{e.tm}</div>
+                  <div style={{color:C.dim,fontSize:"0.7rem"}}>{e.n} {t.picks}</div>
+                </div>
+                <div style={{fontFamily:"monospace",fontSize:"1.15rem",fontWeight:700,color:C.gold}}>{e.pts} {t.pts}</div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [view,setView] = useState("entry");
+  const [teamName,setTeamName] = useState("");
+  const [matches,setMatches] = useState([]);
+  const [results,setResults] = useState({});
+  const [allPicks,setAllPicks] = useState({});
+  const [weather,setWeather] = useState({});
+  const [apiKeys,setApiKeys] = useState(null);
+  const [showApiConfig,setShowApiConfig] = useState(false);
+  const [loading,setLoading] = useState(true);
+  const [dataLoading,setDataLoading] = useState(false);
+  const [dataError,setDataError] = useState("");
+  const [lang,setLang] = useState("en");
+
+  useEffect(() => {
+    (async () => {
+      const [r,p,w,k,m,l] = await Promise.all([
+        store.get("wc-results"), store.get("wc-picks"), store.get("wc-weather"),
+        store.get("wc-apikeys"), store.get("wc-matches"),
+        store.get("wc-lang"),
+      ]);
+      if (r) setResults(r);
+      if (p) setAllPicks(p);
+      if (w) setWeather(w);
+      if (k) setApiKeys(k);
+      if (l) setLang(l);
+      setMatches(m || SAMPLE);
+      setLoading(false);
+    })();
+  }, []);
+
+  const handleSetLang = (l) => { setLang(l); store.set("wc-lang", l); };
+
+  const loadLiveData = useCallback(async (keys) => {
+    if (!keys?.footballDataKey) { setMatches(SAMPLE); return; }
+    setDataLoading(true); setDataError("");
+    try {
+      let fm = SAMPLE;
+      try { fm = await loadFixtures(keys.footballDataKey); }
+      catch (e) { setDataError(STRINGS[lang].fixturesError + e.message + STRINGS[lang].usingSample); fm = SAMPLE; }
+      setMatches(fm); store.set("wc-matches", fm);
+      const wm = {};
+      for (const m of fm.filter(m=>!isLocked(m.kickoffISO)).slice(0,10)) {
+        const w = await loadWeather(m.venue, m.kickoffISO);
+        if (w) wm[m.id] = w;
+        await new Promise(r=>setTimeout(r,150));
+      }
+      setWeather(wm); store.set("wc-weather", wm);
+    } catch (e) { setDataError(String(e)); }
+    setDataLoading(false);
+  }, [lang]);
+
+  const handleApiSave = async (keys) => {
+    setApiKeys(keys);
+    if (keys) store.set("wc-apikeys", keys);
+    setShowApiConfig(false);
+    await loadLiveData(keys);
+  };
+
+  const handleSavePick = useCallback(async (mid, pick) => {
+    setAllPicks(prev => {
+      const u = {...prev, [teamName]: {...(prev[teamName]||{}), [mid]: pick}};
+      store.set("wc-picks", u);
+      return u;
+    });
+  }, [teamName]);
+
+  const handleSaveResult = useCallback(async (mid, result) => {
+    setResults(prev => {
+      const u = {...prev, [mid]: result};
+      store.set("wc-results", u);
+      return u;
+    });
+  }, []);
+
+  if (loading) return (
+    <div style={{minHeight:"100vh",background:C.navyDeep,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{CSS}</style>
+      <span style={{color:C.gold,fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.4rem",letterSpacing:4}}>{STRINGS[lang].loading.toUpperCase()}</span>
+    </div>
+  );
+
+  if (showApiConfig) return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 0%, #142e5e, "+C.navyDeep+")",display:"flex",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
+      <style>{CSS}</style>
+      <PitchBg />
+      <div style={{position:"fixed",top:14,right:18,zIndex:30}}><LangSwitch lang={lang} setLang={handleSetLang} /></div>
+      <div style={{width:"100%",maxWidth:500,position:"relative",zIndex:1}}>
+        <ApiConfig onSave={handleApiSave} existing={apiKeys} lang={lang} />
+      </div>
+    </div>
+  );
+
+  if (view==="entry") return <EntryScreen onEnter={n=>{setTeamName(n);setView("participant");}} onAdmin={()=>setView("admin")} lang={lang} setLang={handleSetLang} />;
+  if (view==="admin") return <AdminView matches={matches} results={results} allPicks={allPicks} weather={weather} onSaveResult={handleSaveResult} onLogout={()=>setView("entry")} onRefresh={()=>loadLiveData(apiKeys)} onConfigApis={()=>setShowApiConfig(true)} loading={dataLoading} dataError={dataError} lang={lang} setLang={handleSetLang} />;
+  return <ParticipantView teamName={teamName} matches={matches} results={results} allPicks={allPicks} weather={weather} onSavePick={handleSavePick} onLogout={()=>{setTeamName("");setView("entry");}} lang={lang} setLang={handleSetLang} />;
+}
