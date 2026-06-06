@@ -313,6 +313,36 @@ function matchCardHTML(m,pick,result,weather,lang,adminMode){
   </div>`;
 }
 
+// ── Scoring panel (shared between participant + admin) ────────────────────────
+function buildScoringPanel(T){
+  return `<div style="margin:14px 0">
+    <button onclick="toggleScoring()" style="background:transparent;border:none;color:#7A9CC0;font-size:.75rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;font-weight:700;display:flex;align-items:center;gap:6px;padding:0;text-transform:uppercase;cursor:pointer">
+      <span style="color:#F0A500;font-size:.85rem">⚡</span> ${T.scoringRules} <span id="scoring-chevron" style="transition:transform .2s;display:inline-block;transform:rotate(180deg)">▾</span>
+    </button>
+    <div id="scoring-panel" style="display:block;margin-top:10px;background:#0F2847;border:1px solid #1A3560;border-radius:10px;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.76rem;margin-bottom:14px">
+        <span style="color:#3A5A80">${T.score0}: <b style="color:#555">0 ${T.pts}</b></span>
+        <span style="color:#E8EDF5">${T.score3}: <b style="color:#3E94D4">3 ${T.pts}</b></span>
+        <span style="color:#E8EDF5">${T.score4}: <b style="color:#FFD04A">4 ${T.pts}</b></span>
+        <span style="color:#E8EDF5">${T.score6win}: <b style="color:#F0A500">6 ${T.pts}</b></span>
+        <span style="color:#E8EDF5">${T.score6draw}: <b style="color:#F0A500">6 ${T.pts}</b></span>
+        <span style="color:#E8EDF5">${T.score10}: <b style="color:#5de890">10 ${T.pts}</b></span>
+      </div>
+      <div style="border-top:1px solid #1A3560;padding-top:12px">
+        <div style="color:#F0A500;font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;margin-bottom:8px">${T.mulTitle}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 12px;font-size:.74rem">
+          <span style="color:#E8EDF5">${T.mulGroup}: <b style="color:#F0A500">x5</b></span>
+          <span style="color:#E8EDF5">${T.mulR32}: <b style="color:#F0A500">x6</b></span>
+          <span style="color:#E8EDF5">${T.mulR16}: <b style="color:#F0A500">x7</b></span>
+          <span style="color:#E8EDF5">${T.mulQF}: <b style="color:#FFD04A">x8</b></span>
+          <span style="color:#E8EDF5">${T.mulSF}: <b style="color:#FFD04A">x9</b></span>
+          <span style="color:#E8EDF5">${T.mulF}: <b style="color:#5de890">x10</b></span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ── Week grouping ─────────────────────────────────────────────────────────────
 function groupByWeek(matches){
   const groups={};
@@ -433,33 +463,7 @@ function renderParticipant(app,T){
       ${[["upcoming",T.open],["locked",T.locked],["completed",T.final],["all",T.all]].map(([k,l])=>`<button class="filter-btn ${STATE.filter===k?'active':'inactive'}" onclick="setFilter('${k}')">${l}</button>`).join("")}
     </div>`;
 
-    const scoringPanel=`
-    <div style="margin-top:14px;margin-bottom:4px">
-      <button onclick="toggleScoring()" style="background:transparent;border:none;color:#3A5A80;font-size:.75rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;font-weight:700;display:flex;align-items:center;gap:6px;padding:0;text-transform:uppercase" id="scoring-toggle">
-        <span style="color:#F0A500;font-size:.85rem">⚡</span> ${T.scoringRules} <span id="scoring-chevron" style="transition:transform .2s">▾</span>
-      </button>
-      <div id="scoring-panel" style="display:none;margin-top:10px;background:#0F2847;border:1px solid #1A3560;border-radius:10px;padding:14px 16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.76rem;margin-bottom:14px">
-          <span style="color:#3A5A80">${T.score0}: <b style="color:#555">0 ${T.pts}</b></span>
-          <span style="color:#E8EDF5">${T.score3}: <b style="color:#3E94D4">3 ${T.pts}</b></span>
-          <span style="color:#E8EDF5">${T.score4}: <b style="color:#FFD04A">4 ${T.pts}</b></span>
-          <span style="color:#E8EDF5">${T.score6win}: <b style="color:#F0A500">6 ${T.pts}</b></span>
-          <span style="color:#E8EDF5">${T.score6draw}: <b style="color:#F0A500">6 ${T.pts}</b></span>
-          <span style="color:#E8EDF5">${T.score10}: <b style="color:#5de890">10 ${T.pts}</b></span>
-        </div>
-        <div style="border-top:1px solid #1A3560;padding-top:12px">
-          <div style="color:#F0A500;font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;margin-bottom:8px">${T.mulTitle}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 12px;font-size:.74rem">
-            <span style="color:#E8EDF5">${T.mulGroup}: <b style="color:#F0A500">x5</b></span>
-            <span style="color:#E8EDF5">${T.mulR32}: <b style="color:#F0A500">x6</b></span>
-            <span style="color:#E8EDF5">${T.mulR16}: <b style="color:#F0A500">x7</b></span>
-            <span style="color:#E8EDF5">${T.mulQF}: <b style="color:#FFD04A">x8</b></span>
-            <span style="color:#E8EDF5">${T.mulSF}: <b style="color:#FFD04A">x9</b></span>
-            <span style="color:#E8EDF5">${T.mulF}: <b style="color:#5de890">x10</b></span>
-          </div>
-        </div>
-      </div>
-    </div>`;
+    const scoringPanel=buildScoringPanel(T);
 
     if(fm.length===0){
       content=filtersHTML+scoringPanel+`<p style="color:#3A5A80;font-style:italic;margin-top:16px">${T.noMatches}</p>`;
@@ -520,7 +524,7 @@ function renderAdmin(app,T){
     const activeWeek=STATE.activeWeek||weeks[0]?.key;
     const nav=weekNavHTML(weeks,activeWeek);
     const cards=weekMatchesHTML(weeks,m=>matchCardHTML(m,null,STATE.results[m.id],STATE.weather[m.id],STATE.lang,true));
-    content=`<div class="section-title">${T.matchResults}</div>`+nav+cards;
+    content=`<div class="section-title">${T.matchResults}</div>`+buildScoringPanel(T)+nav+cards;
   } else if(STATE.adminTab==="picks"){
     content=`<div class="section-title">${T.allPicksTitle}</div>`+(board.length===0?`<p style="color:#3A5A80">${T.noPicks}</p>`:
       board.map(e=>`<div class="card" style="margin-bottom:12px">
