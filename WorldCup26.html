@@ -409,10 +409,11 @@ function countdown(iso) {
 }
 
 async function loadFixtures(key) {
-  const r = await fetch("https://api.football-data.org/v4/competitions/WC/matches?season=2026", {
-    headers: { "X-Auth-Token": key }
-  });
-  if (!r.ok) throw new Error("football-data.org error " + r.status);
+  // Route through Cloudflare Worker proxy to avoid CORS restrictions.
+  // The worker injects the API key server-side — no key needed in the browser call.
+  const proxyUrl = "https://hidden-limit-f2ce.nsaund85.workers.dev/wc/matches?season=2026";
+  const r = await fetch(proxyUrl);
+  if (!r.ok) throw new Error("Worker proxy error " + r.status);
   const d = await r.json();
   return (d.matches || []).map((m, i) => ({
     id: String(m.id || i),
@@ -509,10 +510,10 @@ function LangSwitch({ lang, setLang }) {
   return (
     <div className="lang-switch" onClick={() => setLang(lang === "en" ? "pt" : "en")} title="Switch language / Mudar idioma">
       <div className={"lang-opt " + (lang==="en" ? "active" : "inactive")}>
-        {getFlagEmoji("US")} EN
+        🇺🇸 EN
       </div>
       <div className={"lang-opt " + (lang==="pt" ? "active" : "inactive")}>
-        {getFlagEmoji("BR")} PT
+        🇧🇷 PT
       </div>
     </div>
   );
@@ -1016,17 +1017,19 @@ function App() {
       if (l) setLang(l);
       setMatches(m || SAMPLE);
       setLoading(false);
+      // Auto-load live fixtures via proxy on every startup (key lives in the worker)
+      loadLiveDataViaProxy();
     })();
   }, []);
 
   const handleSetLang = (l) => { setLang(l); store.set("wc-lang", l); };
 
-  const loadLiveData = useCallback(async (keys) => {
-    if (!keys?.footballDataKey) { setMatches(SAMPLE); return; }
+  // Loads fixtures + weather through the Cloudflare Worker — no API key needed in browser
+  const loadLiveDataViaProxy = useCallback(async () => {
     setDataLoading(true); setDataError("");
     try {
       let fm = SAMPLE;
-      try { fm = await loadFixtures(keys.footballDataKey); }
+      try { fm = await loadFixtures(); }
       catch (e) { setDataError(STRINGS[lang].fixturesError + e.message + STRINGS[lang].usingSample); fm = SAMPLE; }
       setMatches(fm); store.set("wc-matches", fm);
       const wm = {};
@@ -1039,6 +1042,8 @@ function App() {
     } catch (e) { setDataError(String(e)); }
     setDataLoading(false);
   }, [lang]);
+
+  const loadLiveData = loadLiveDataViaProxy;
 
   const handleApiSave = async (keys) => {
     setApiKeys(keys);
