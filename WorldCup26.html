@@ -1,888 +1,592 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>World Cup Pick'em 2026</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #060E1F; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>World Cup Pick'em 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060E1F;font-family:'Inter',sans-serif;color:#fff;min-height:100vh}
+input{outline:none;font-family:'Inter',sans-serif}
+input:focus{border-color:#F0A500!important;box-shadow:0 0 0 2px #F0A50033!important}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+button{cursor:pointer;font-family:'Barlow Condensed',sans-serif;transition:all .18s}
+button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#060E1F}::-webkit-scrollbar-thumb{background:#1E3354;border-radius:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.fade{animation:fadeUp .4s ease both}
+.pitch{position:fixed;inset:0;pointer-events:none;opacity:.04;z-index:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 119px,#fff 119px,#fff 120px),repeating-linear-gradient(90deg,transparent,transparent 119px,#fff 119px,#fff 120px)}
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#C8102E,#1D70B8,#F0A500);z-index:100}
+.botbar{position:fixed;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#C8102E,#1D70B8,#F0A500);z-index:100}
+.card{background:linear-gradient(145deg,#0F2847,#0D2040);border:1px solid #1A3560;border-radius:12px;padding:18px 20px;margin-bottom:10px;position:relative;overflow:hidden}
+.card-top{position:absolute;top:0;left:0;right:0;height:2px}
+.nav{background:#060E1F;border-bottom:1px solid #1A3560;padding:13px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;gap:10px;flex-wrap:wrap}
+.nav-title{font-family:'Bebas Neue',sans-serif;letter-spacing:4px;font-size:1.3rem}
+.tab-btn{border:none;border-radius:7px;padding:6px 16px;font-size:.8rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.tab-btn.active{background:linear-gradient(135deg,#C8102E,#9A0C23);color:#fff;box-shadow:0 2px 12px #C8102E44}
+.tab-btn.inactive{background:transparent;color:#3A5A80;border:1px solid #1E3354}
+.filter-btn{border-radius:6px;padding:4px 12px;font-size:.73rem;font-weight:600;border:1px solid}
+.filter-btn.active{background:#1E3354;color:#F0A500;border-color:#1A3560}
+.filter-btn.inactive{background:transparent;color:#3A5A80;border-color:#1E3354}
+.red-btn{background:linear-gradient(135deg,#C8102E,#9A0C23);color:#fff;border:none;border-radius:8px;padding:13px;font-size:1rem;font-weight:700;letter-spacing:1.5px;width:100%;box-shadow:0 4px 20px #C8102E44}
+.gold-btn{background:linear-gradient(135deg,#F0A500,#FFD04A);color:#060E1F;border:none;border-radius:8px;padding:13px;font-size:1rem;font-weight:700;letter-spacing:1.5px;width:100%}
+.ghost-btn{background:transparent;border:1px solid #1E3354;color:#3A5A80;border-radius:8px;padding:9px;width:100%;font-size:.82rem}
+.inp{background:#060E1F;border:1px solid #1A3560;border-radius:8px;padding:12px 14px;color:#fff;font-size:.95rem;width:100%}
+.score-inp{width:48px;background:#060E1F;border:1px solid #1A3560;border-radius:6px;padding:7px 0;color:#F0A500;font-size:1.25rem;font-weight:700;text-align:center;font-family:monospace}
+.lock-btn{border:none;border-radius:6px;padding:7px 13px;font-size:.78rem;font-weight:700;white-space:nowrap}
+.weather-badge{display:inline-flex;align-items:center;gap:5px;background:#1E3354;border:1px solid #1A3560;border-radius:6px;padding:4px 10px;font-size:.74rem}
+.pts-badge{border-radius:4px;padding:2px 8px;font-weight:700;font-size:.75rem;font-family:monospace}
+.lang-sw{display:flex;align-items:center;gap:4px;background:#1E3354;border:1px solid #1A3560;border-radius:20px;padding:3px;cursor:pointer}
+.lang-opt{padding:4px 10px;border-radius:16px;font-size:.73rem;font-weight:700;display:flex;align-items:center;gap:4px;transition:all .18s;font-family:'Barlow Condensed',sans-serif}
+.lang-opt.on{background:#C8102E;color:#fff}
+.lang-opt.off{color:#3A5A80}
+.err{color:#ff7070;font-size:.82rem;background:#2a080a;border:1px solid #4a1018;border-radius:6px;padding:7px 12px;margin-bottom:12px}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:4px;margin-bottom:20px}
+#app{position:relative;z-index:1}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel" data-presets="react">
-    const { useState, useEffect, useCallback } = React;
+<div class="topbar"></div>
+<div class="pitch"></div>
+<div id="app"></div>
+<div class="botbar"></div>
 
+<script>
+// ── Constants ────────────────────────────────────────────────────────────────
+const PASS = "WORLDCUP2026", ADMIN_PASS = "ADMIN2026";
+const C = {navy:"#0B1F3A",navyDeep:"#060E1F",navyMid:"#0F2847",navyCard:"#0D2040",navyBorder:"#1A3560",red:"#C8102E",gold:"#F0A500",goldLight:"#FFD04A",sky:"#1D70B8",skyLight:"#3E94D4",white:"#FFFFFF",offWhite:"#E8EDF5",muted:"#7A9CC0",dim:"#3A5A80",dimmer:"#1E3354"};
+const SCORING = {wrongOrMissed:0,correctWinner:3,correctWinnerLoser:4,correctWinnerWinner:6,correctDrawOnly:6,correctDrawExact:10};
+const STAGE_MUL = {group:5,roundOf32:6,roundOf16:7,quarterFinal:8,semiFinal:9,thirdPlace:9,final:10};
+const PROXY = "https://hidden-limit-f2ce.nsaund85.workers.dev/wc/matches?season=2026";
 
-const PASS = "WORLDCUP2026";
-const ADMIN_PASS = "ADMIN2026";
-const SCORING = {
-  wrongOrMissed: 0,       // wrong pick or no submission
-  correctWinner: 3,       // correct winning team only
-  correctWinnerLoser: 4,  // correct winner + losing team's goal count
-  correctWinnerWinner: 6, // correct winner + winning team's goal count
-  correctDrawOnly: 6,     // correct draw outcome, wrong exact score
-  correctDrawExact: 10,   // correct draw outcome AND exact score
-};
+const FLAG_CODES = {"United States":"us","USA":"us","Canada":"ca","Mexico":"mx","Argentina":"ar","Brazil":"br","Brasil":"br","Uruguay":"uy","Colombia":"co","Ecuador":"ec","Paraguay":"py","Venezuela":"ve","Chile":"cl","Peru":"pe","England":"gb-eng","France":"fr","Spain":"es","Germany":"de","Portugal":"pt","Netherlands":"nl","Belgium":"be","Croatia":"hr","Austria":"at","Switzerland":"ch","Scotland":"gb-sct","Norway":"no","Sweden":"se","Turkey":"tr","Turkiye":"tr","Czech Republic":"cz","Czechia":"cz","Bosnia and Herzegovina":"ba","Bosnia & Herzegovina":"ba","Bosnia-H.":"ba","Slovenia":"si","Slovakia":"sk","Albania":"al","Georgia":"ge","Romania":"ro","Hungary":"hu","Ukraine":"ua","Serbia":"rs","Poland":"pl","Denmark":"dk","Greece":"gr","Italy":"it","Japan":"jp","South Korea":"kr","Korea Republic":"kr","Australia":"au","Iran":"ir","IR Iran":"ir","Saudi Arabia":"sa","Qatar":"qa","Uzbekistan":"uz","Jordan":"jo","Morocco":"ma","Nigeria":"ng","Senegal":"sn","Ivory Coast":"ci","Cote d Ivoire":"ci","Ghana":"gh","Egypt":"eg","Tunisia":"tn","Algeria":"dz","Mali":"ml","Cameroon":"cm","South Africa":"za","DR Congo":"cd","Congo DR":"cd","Cape Verde":"cv","Cabo Verde":"cv","Costa Rica":"cr","Panama":"pa","Honduras":"hn","Guatemala":"gt","Jamaica":"jm","Curacao":"cw","Trinidad and Tobago":"tt","El Salvador":"sv","New Zealand":"nz","Iraq":"iq","Haiti":"ht"};
 
-// ─── Stage multipliers ────────────────────────────────────────────────────────
-const STAGE_MULTIPLIERS = {
-  group:       5,
-  roundOf32:   6,
-  roundOf16:   7,
-  quarterFinal:8,
-  semiFinal:   9,
-  thirdPlace:  9,
-  final:       10,
-};
+const WMO_CODES = {0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Foggy",51:"Light drizzle",53:"Drizzle",61:"Slight rain",63:"Moderate rain",65:"Heavy rain",71:"Slight snow",80:"Showers",81:"Moderate showers",82:"Heavy showers",95:"Thunderstorm"};
+const WMO_ICONS = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",51:"🌦️",53:"🌧️",61:"🌧️",63:"🌧️",65:"⛈️",71:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",95:"⛈️"};
 
-// Map the raw group/stage string from the API (or sample data) to a multiplier key
-function stageMultiplier(group) {
-  if (!group) return STAGE_MULTIPLIERS.group;
-  const g = group.toUpperCase();
-  if (g.includes("FINAL") && !g.includes("SEMI") && !g.includes("QUARTER") && !g.includes("THIRD")) return STAGE_MULTIPLIERS.final;
-  if (g.includes("THIRD") || g.includes("3RD") || g.includes("THIRD PLACE")) return STAGE_MULTIPLIERS.thirdPlace;
-  if (g.includes("SEMI")) return STAGE_MULTIPLIERS.semiFinal;
-  if (g.includes("QUARTER")) return STAGE_MULTIPLIERS.quarterFinal;
-  if (g.includes("ROUND OF 16") || g.includes("LAST 16") || g.includes("R16")) return STAGE_MULTIPLIERS.roundOf16;
-  if (g.includes("ROUND OF 32") || g.includes("LAST 32") || g.includes("R32")) return STAGE_MULTIPLIERS.roundOf32;
-  // Default: anything with "GROUP" or a letter group label (e.g. "Group A")
-  return STAGE_MULTIPLIERS.group;
-}
+const VENUE_COORDS = {"MetLife Stadium":{lat:40.8135,lon:-74.0745,tz:"America/New_York"},"SoFi Stadium":{lat:33.9534,lon:-118.3392,tz:"America/Los_Angeles"},"AT&T Stadium":{lat:32.7473,lon:-97.0945,tz:"America/Chicago"},"Gillette Stadium":{lat:42.0909,lon:-71.2643,tz:"America/New_York"},"Arrowhead Stadium":{lat:39.0489,lon:-94.4839,tz:"America/Chicago"},"Hard Rock Stadium":{lat:25.958,lon:-80.2389,tz:"America/New_York"},"NRG Stadium":{lat:29.6847,lon:-95.4107,tz:"America/Chicago"},"Rose Bowl":{lat:34.1614,lon:-118.1676,tz:"America/Los_Angeles"},"Levi's Stadium":{lat:37.4033,lon:-121.9694,tz:"America/Los_Angeles"},"Lincoln Financial Field":{lat:39.9008,lon:-75.1675,tz:"America/New_York"},"Estadio Azteca":{lat:19.3029,lon:-99.1505,tz:"America/Mexico_City"},"Estadio Akron":{lat:20.669,lon:-103.463,tz:"America/Mexico_City"},"BC Place":{lat:49.2767,lon:-123.1118,tz:"America/Vancouver"},"BMO Field":{lat:43.6333,lon:-79.4182,tz:"America/Toronto"}};
 
-// ─── Translations ─────────────────────────────────────────────────────────────
 const STRINGS = {
-  en: {
-    appTitle: "WC PICK'EM",
-    appYear: "2026",
-    worldCup: "WORLD CUP",
-    pickem: "PICK'EM 2026",
-    tagline: "Real-time weather · Picks lock 1 min before kickoff",
-    teamNameLabel: "Your Team Name",
-    teamNamePlaceholder: "e.g. The Offside Trappers",
-    passcodeLabel: "League Passcode",
-    passcodePlaceholder: "Enter passcode",
-    joinBtn: "JOIN LEAGUE",
-    commissionerAccess: "Commissioner Access",
-    adminPasscodePlaceholder: "Admin passcode",
-    enterAdmin: "ENTER ADMIN",
-    score0: "Wrong pick / No submission",
-    score3: "Correct winning team",
-    score4: "Correct winner + losing team goals",
-    score6win: "Correct winner + winning team goals",
-    score6draw: "Correct draw (wrong score)",
-    score10: "Correct draw + exact score",
-    multiplierTitle: "Stage Multipliers",
-    multGroup: "Group Stage",
-    multR32: "Round of 32",
-    multR16: "Round of 16",
-    multQF: "Quarter Finals",
-    multSF: "Semi Finals / 3rd Place",
-    multF: "Final",
-    pts: "pts",
-    myPicks: "My Picks",
-    leaderboard: "Leaderboard",
-    standings: "STANDINGS",
-    open: "Open",
-    locked: "Locked",
-    final: "Final",
-    all: "All",
-    yourPick: "Your Pick",
-    lockIn: "Lock In",
-    update: "Update",
-    saved: "Saved!",
-    noPick: "No pick",
-    picksLocked: "Picks locked",
-    toLock: "to lock",
-    rank: "Rank",
-    picks: "picks",
-    noPicks: "No picks yet.",
-    noMatches: "No matches here.",
-    logout: "Logout",
-    you: "you",
-    results: "Results",
-    allPicks: "All Picks",
-    matchResults: "MATCH RESULTS",
-    allPicksTitle: "ALL PICKS",
-    leaderboardTitle: "LEADERBOARD",
-    save: "Save",
-    refresh: "Refresh",
-    loading: "Loading",
-    apis: "APIs",
-    commissioner: "COMMISSIONER",
-    apiConfig: "API CONFIGURATION",
-    apiTagline: "Connect live data. Both have free tiers.",
-    fdLabel: "football-data.org Key",
-    freeKey: "Get free key",
-    fdNote: "Fixtures, teams, kickoff times · World Cup free tier",
-    weatherNote: "Open-Meteo weather — no key needed, always on",
-    saveLoad: "SAVE AND LOAD LIVE DATA",
-    skipSample: "Skip - use sample data",
-    incorrectPass: "Incorrect passcode.",
-    enterTeam: "Enter a team name.",
-    wrongAdmin: "Wrong admin code.",
-    fixturesError: "Fixtures: ",
-    usingSample: " — using sample data.",
-    vs: "VS",
-    wind: "mph wind",
-  },
-  pt: {
-    appTitle: "PALPITES",
-    appYear: "2026",
-    worldCup: "COPA DO MUNDO",
-    pickem: "PALPITES 2026",
-    tagline: "Clima em tempo real · Palpites encerram 1 min antes do kickoff",
-    teamNameLabel: "Nome do Seu Time",
-    teamNamePlaceholder: "ex: Os Craques do Sofá",
-    passcodeLabel: "Senha da Liga",
-    passcodePlaceholder: "Digite a senha",
-    joinBtn: "ENTRAR NA LIGA",
-    commissionerAccess: "Acesso do Comissário",
-    adminPasscodePlaceholder: "Senha do administrador",
-    enterAdmin: "ENTRAR COMO ADMIN",
-    score0: "Palpite errado / Sem envio",
-    score3: "Acertou o vencedor",
-    score4: "Vencedor + gols do perdedor",
-    score6win: "Vencedor + gols do vencedor",
-    score6draw: "Empate correto (placar errado)",
-    score10: "Empate correto + placar exato",
-    multiplierTitle: "Multiplicadores por Fase",
-    multGroup: "Fase de Grupos",
-    multR32: "Oitavas de Final",
-    multR16: "Quartas de Final (16)",
-    multQF: "Quartas de Final",
-    multSF: "Semi / 3° Lugar",
-    multF: "Final",
-    pts: "pts",
-    myPicks: "Meus Palpites",
-    leaderboard: "Classificação",
-    standings: "CLASSIFICAÇÃO",
-    open: "Abertos",
-    locked: "Encerrados",
-    final: "Finalizados",
-    all: "Todos",
-    yourPick: "Seu Palpite",
-    lockIn: "Confirmar",
-    update: "Atualizar",
-    saved: "Salvo!",
-    noPick: "Sem palpite",
-    picksLocked: "Palpites encerrados",
-    toLock: "para encerrar",
-    rank: "Pos.",
-    picks: "palpites",
-    noPicks: "Nenhum palpite ainda.",
-    noMatches: "Nenhuma partida aqui.",
-    logout: "Sair",
-    you: "você",
-    results: "Resultados",
-    allPicks: "Todos os Palpites",
-    matchResults: "RESULTADOS DAS PARTIDAS",
-    allPicksTitle: "TODOS OS PALPITES",
-    leaderboardTitle: "CLASSIFICAÇÃO",
-    save: "Salvar",
-    refresh: "Atualizar",
-    loading: "Carregando",
-    apis: "APIs",
-    commissioner: "COMISSÁRIO",
-    apiConfig: "CONFIGURAÇÃO DE API",
-    apiTagline: "Conecte dados ao vivo. Ambos têm planos gratuitos.",
-    fdLabel: "Chave football-data.org",
-    freeKey: "Obter chave gratuita",
-    fdNote: "Partidas, times, horários · Copa do Mundo no plano gratuito",
-    weatherNote: "Clima Open-Meteo — sem chave necessária, sempre ativo",
-    saveLoad: "SALVAR E CARREGAR DADOS AO VIVO",
-    skipSample: "Pular - usar dados de exemplo",
-    incorrectPass: "Senha incorreta.",
-    enterTeam: "Digite o nome do seu time.",
-    wrongAdmin: "Código de admin incorreto.",
-    fixturesError: "Partidas: ",
-    usingSample: " — usando dados de exemplo.",
-    vs: "VS",
-    wind: "mph vento",
-  },
+  en:{appTitle:"WC PICK'EM",appYear:"2026",worldCup:"WORLD CUP",pickem:"PICK'EM 2026",tagline:"Real-time weather · Picks lock 1 min before kickoff",teamNameLabel:"Your Team Name",teamNamePh:"e.g. The Offside Trappers",passLabel:"League Passcode",passPh:"Enter passcode",joinBtn:"JOIN LEAGUE",commAccess:"Commissioner Access",adminPh:"Admin passcode",enterAdmin:"ENTER ADMIN",score0:"Wrong pick / No submission",score3:"Correct winning team",score4:"Correct winner + losing team goals",score6win:"Correct winner + winning team goals",score6draw:"Correct draw (wrong score)",score10:"Correct draw + exact score",mulTitle:"Stage Multipliers",mulGroup:"Group Stage",mulR32:"Round of 32",mulR16:"Round of 16",mulQF:"Quarter Finals",mulSF:"Semi Finals / 3rd Place",mulF:"Final",pts:"pts",myPicks:"My Picks",leaderboard:"Leaderboard",standings:"STANDINGS",open:"Open",locked:"Locked",final:"Final",all:"All",yourPick:"Your Pick",lockIn:"Lock In",update:"Update",saved:"Saved!",noPick:"No pick",picksLocked:"Picks locked",toLock:"to lock",rank:"Rank",picks:"picks",noPicks:"No picks yet.",noMatches:"No matches here.",logout:"Logout",you:"you",results:"Results",allPicks:"All Picks",matchResults:"MATCH RESULTS",allPicksTitle:"ALL PICKS",leaderboardTitle:"LEADERBOARD",save:"Save",refresh:"Refresh",loading:"Loading",apis:"APIs",commissioner:"COMMISSIONER",apiConfig:"API CONFIGURATION",apiTagline:"Fixtures load automatically via proxy.",fdLabel:"football-data.org Key (optional - pre-configured)",weatherNote:"Open-Meteo weather — no key needed, always on",saveLoad:"REFRESH LIVE DATA",skipSample:"Use sample data",incorrectPass:"Incorrect passcode.",enterTeam:"Enter a team name.",wrongAdmin:"Wrong admin code.",vs:"VS",wind:"mph wind"},
+  pt:{appTitle:"PALPITES",appYear:"2026",worldCup:"COPA DO MUNDO",pickem:"PALPITES 2026",tagline:"Clima em tempo real · Palpites encerram 1 min antes do kickoff",teamNameLabel:"Nome do Seu Time",teamNamePh:"ex: Os Craques do Sofa",passLabel:"Senha da Liga",passPh:"Digite a senha",joinBtn:"ENTRAR NA LIGA",commAccess:"Acesso do Comissario",adminPh:"Senha do administrador",enterAdmin:"ENTRAR COMO ADMIN",score0:"Palpite errado / Sem envio",score3:"Acertou o vencedor",score4:"Vencedor + gols do perdedor",score6win:"Vencedor + gols do vencedor",score6draw:"Empate correto (placar errado)",score10:"Empate correto + placar exato",mulTitle:"Multiplicadores por Fase",mulGroup:"Fase de Grupos",mulR32:"Oitavas de Final",mulR16:"Quartas (16)",mulQF:"Quartas de Final",mulSF:"Semi / 3 Lugar",mulF:"Final",pts:"pts",myPicks:"Meus Palpites",leaderboard:"Classificacao",standings:"CLASSIFICACAO",open:"Abertos",locked:"Encerrados",final:"Finalizados",all:"Todos",yourPick:"Seu Palpite",lockIn:"Confirmar",update:"Atualizar",saved:"Salvo!",noPick:"Sem palpite",picksLocked:"Palpites encerrados",toLock:"para encerrar",rank:"Pos.",picks:"palpites",noPicks:"Nenhum palpite ainda.",noMatches:"Nenhuma partida aqui.",logout:"Sair",you:"voce",results:"Resultados",allPicks:"Todos os Palpites",matchResults:"RESULTADOS DAS PARTIDAS",allPicksTitle:"TODOS OS PALPITES",leaderboardTitle:"CLASSIFICACAO",save:"Salvar",refresh:"Atualizar",loading:"Carregando",apis:"APIs",commissioner:"COMISSARIO",apiConfig:"CONFIGURACAO DE API",apiTagline:"Partidas carregam automaticamente via proxy.",fdLabel:"Chave football-data.org (opcional - pre-configurada)",weatherNote:"Clima Open-Meteo — sem chave necessaria, sempre ativo",saveLoad:"ATUALIZAR DADOS AO VIVO",skipSample:"Usar dados de exemplo",incorrectPass:"Senha incorreta.",enterTeam:"Digite o nome do seu time.",wrongAdmin:"Codigo de admin incorreto.",vs:"VS",wind:"mph vento"}
 };
 
-const WMO_CODES = {
-  en: {0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Foggy",
-    51:"Light drizzle",53:"Drizzle",61:"Slight rain",63:"Moderate rain",65:"Heavy rain",
-    71:"Slight snow",80:"Showers",81:"Moderate showers",82:"Heavy showers",95:"Thunderstorm"},
-  pt: {0:"Céu limpo",1:"Principalmente limpo",2:"Parcialmente nublado",3:"Nublado",45:"Neblina",
-    51:"Garoa leve",53:"Garoa",61:"Chuva fraca",63:"Chuva moderada",65:"Chuva forte",
-    71:"Neve fraca",80:"Pancadas",81:"Pancadas moderadas",82:"Pancadas fortes",95:"Trovoada"},
-};
+const SAMPLE_MATCHES = [
+  {id:"s1",date:"2026-06-11",kickoffISO:"2026-06-11T22:00:00Z",time:"6:00 PM",home:"Mexico",away:"South Africa",homeCode:"mx",awayCode:"za",venue:"Estadio Azteca",group:"Group A",status:"TIMED"},
+  {id:"s2",date:"2026-06-12",kickoffISO:"2026-06-12T19:00:00Z",time:"3:00 PM",home:"USA",away:"Serbia",homeCode:"us",awayCode:"rs",venue:"SoFi Stadium",group:"Group C",status:"TIMED"},
+  {id:"s3",date:"2026-06-12",kickoffISO:"2026-06-12T22:00:00Z",time:"6:00 PM",home:"Argentina",away:"Slovakia",homeCode:"ar",awayCode:"sk",venue:"MetLife Stadium",group:"Group D",status:"TIMED"},
+  {id:"s4",date:"2026-06-13",kickoffISO:"2026-06-13T16:00:00Z",time:"12:00 PM",home:"Brazil",away:"Germany",homeCode:"br",awayCode:"de",venue:"Rose Bowl",group:"Group F",status:"TIMED"},
+  {id:"s5",date:"2026-06-14",kickoffISO:"2026-06-14T19:00:00Z",time:"3:00 PM",home:"France",away:"Albania",homeCode:"fr",awayCode:"al",venue:"Gillette Stadium",group:"Group E",status:"TIMED"},
+  {id:"s6",date:"2026-06-14",kickoffISO:"2026-06-14T22:00:00Z",time:"6:00 PM",home:"England",away:"Tunisia",homeCode:"gb-eng",awayCode:"tn",venue:"AT&T Stadium",group:"Group G",status:"TIMED"},
+  {id:"s7",date:"2026-06-15",kickoffISO:"2026-06-15T19:00:00Z",time:"3:00 PM",home:"Spain",away:"Uzbekistan",homeCode:"es",awayCode:"uz",venue:"Hard Rock Stadium",group:"Group H",status:"TIMED"},
+  {id:"s8",date:"2026-06-15",kickoffISO:"2026-06-15T22:00:00Z",time:"6:00 PM",home:"Portugal",away:"Croatia",homeCode:"pt",awayCode:"hr",venue:"NRG Stadium",group:"Group I",status:"TIMED"}
+];
 
-const WMO_ICONS = {0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",51:"🌦",53:"🌧",61:"🌧",
-  63:"🌧",65:"⛈",71:"🌨",80:"🌦",81:"🌧",82:"⛈",95:"⛈"};
-
-const C = {
-  navy:"#0B1F3A", navyDeep:"#060E1F", navyMid:"#0F2847", navyCard:"#0D2040",
-  navyBorder:"#1A3560", red:"#C8102E", redDark:"#9A0C23", redGlow:"#C8102E44",
-  gold:"#F0A500", goldLight:"#FFD04A", goldGlow:"#F0A50033", sky:"#1D70B8",
-  skyLight:"#3E94D4", white:"#FFFFFF", offWhite:"#E8EDF5", muted:"#7A9CC0",
-  dim:"#3A5A80", dimmer:"#1E3354",
-};
-
-const VENUE_COORDS = {
-  "MetLife Stadium":         { lat:40.8135, lon:-74.0745, tz:"America/New_York" },
-  "SoFi Stadium":            { lat:33.9534, lon:-118.3392, tz:"America/Los_Angeles" },
-  "AT&T Stadium":            { lat:32.7473, lon:-97.0945, tz:"America/Chicago" },
-  "Gillette Stadium":        { lat:42.0909, lon:-71.2643, tz:"America/New_York" },
-  "Arrowhead Stadium":       { lat:39.0489, lon:-94.4839, tz:"America/Chicago" },
-  "Hard Rock Stadium":       { lat:25.9580, lon:-80.2389, tz:"America/New_York" },
-  "NRG Stadium":             { lat:29.6847, lon:-95.4107, tz:"America/Chicago" },
-  "Rose Bowl":               { lat:34.1614, lon:-118.1676, tz:"America/Los_Angeles" },
-  "Levi's Stadium":          { lat:37.4033, lon:-121.9694, tz:"America/Los_Angeles" },
-  "Lincoln Financial Field": { lat:39.9008, lon:-75.1675, tz:"America/New_York" },
-  "Estadio Azteca":          { lat:19.3029, lon:-99.1505, tz:"America/Mexico_City" },
-  "Estadio Akron":           { lat:20.6690, lon:-103.463, tz:"America/Mexico_City" },
-  "BC Place":                { lat:49.2767, lon:-123.1118, tz:"America/Vancouver" },
-  "BMO Field":               { lat:43.6333, lon:-79.4182, tz:"America/Toronto" },
-};
-
-const FLAG_CODES = {
-  "United States": "us", "USA": "us", "US": "us",
-  "Canada": "ca", "Mexico": "mx",
-  "Argentina": "ar", "Brazil": "br", "Brasil": "br",
-  "Uruguay": "uy", "Colombia": "co", "Ecuador": "ec",
-  "Paraguay": "py", "Venezuela": "ve", "Chile": "cl", "Peru": "pe",
-  "England": "gb-eng", "France": "fr", "Spain": "es", "Germany": "de",
-  "Portugal": "pt", "Netherlands": "nl", "Belgium": "be", "Croatia": "hr",
-  "Austria": "at", "Switzerland": "ch", "Scotland": "gb-sct",
-  "Norway": "no", "Sweden": "se", "Turkey": "tr", "Turkiye": "tr",
-  "Czech Republic": "cz", "Czechia": "cz",
-  "Bosnia and Herzegovina": "ba", "Bosnia & Herzegovina": "ba", "Bosnia-H.": "ba",
-  "Slovenia": "si", "Slovakia": "sk", "Albania": "al", "Georgia": "ge",
-  "Romania": "ro", "Hungary": "hu", "Ukraine": "ua", "Serbia": "rs",
-  "Poland": "pl", "Denmark": "dk", "Greece": "gr", "Italy": "it",
-  "Japan": "jp", "South Korea": "kr", "Korea Republic": "kr",
-  "Australia": "au", "Iran": "ir", "IR Iran": "ir",
-  "Saudi Arabia": "sa", "Qatar": "qa", "Uzbekistan": "uz", "Jordan": "jo",
-  "Morocco": "ma", "Nigeria": "ng", "Senegal": "sn",
-  "Ivory Coast": "ci", "Cote d Ivoire": "ci",
-  "Ghana": "gh", "Egypt": "eg", "Tunisia": "tn", "Algeria": "dz",
-  "Mali": "ml", "Cameroon": "cm", "South Africa": "za",
-  "DR Congo": "cd", "Congo DR": "cd", "Democratic Republic of Congo": "cd",
-  "Cape Verde": "cv", "Cabo Verde": "cv",
-  "Costa Rica": "cr", "Panama": "pa", "Honduras": "hn",
-  "Guatemala": "gt", "Jamaica": "jm", "Curacao": "cw",
-  "Trinidad and Tobago": "tt", "El Salvador": "sv",
-  "New Zealand": "nz", "Iraq": "iq", "Haiti": "ht",
-};
-
-
-function normalizeStr(s) {
-  try { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); } catch { return s.toLowerCase(); }
-}
-
-function teamFlagCode(name) {
-  if (!name || name === "TBD") return null;
-  if (FLAG_CODES[name]) return FLAG_CODES[name];
-  const norm = normalizeStr(name);
-  for (const [k, v] of Object.entries(FLAG_CODES)) {
-    if (normalizeStr(k) === norm) return v;
-    if (norm.includes(normalizeStr(k)) || normalizeStr(k).includes(norm)) return v;
-  }
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function norm(s){try{return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}catch{return s.toLowerCase()}}
+function teamCode(name){
+  if(!name||name==="TBD")return null;
+  if(FLAG_CODES[name])return FLAG_CODES[name];
+  const n=norm(name);
+  for(const[k,v]of Object.entries(FLAG_CODES)){if(norm(k)===n||n.includes(norm(k))||norm(k).includes(n))return v;}
   return null;
 }
-
-function FlagImg({ code, size }) {
-  if (!code) return <span style={{fontSize: size||"1.4rem"}}>&#x1F3F3;</span>;
-  const sz = size === "sm" ? 20 : 28;
-  return (
-    <img
-      src={"https://flagcdn.com/" + sz + "x" + Math.round(sz*0.75) + "/" + code + ".png"}
-      alt={code}
-      style={{width: sz+"px", height: Math.round(sz*0.75)+"px", borderRadius:2, objectFit:"cover", display:"inline-block", verticalAlign:"middle"}}
-      onError={(e)=>{ e.target.style.display="none"; }}
-    />
-  );
+function flagImg(code,sm){
+  if(!code)return "";
+  const sz=sm?20:28,h=Math.round(sz*0.75);
+  return `<img src="https://flagcdn.com/${sz}x${h}/${code}.png" style="width:${sz}px;height:${h}px;border-radius:2px;object-fit:cover;vertical-align:middle" onerror="this.style.display='none'">`;
+}
+function stageMul(group){
+  if(!group)return STAGE_MUL.group;
+  const g=group.toUpperCase();
+  if(g.includes("FINAL")&&!g.includes("SEMI")&&!g.includes("QUARTER")&&!g.includes("THIRD"))return STAGE_MUL.final;
+  if(g.includes("THIRD")||g.includes("3RD"))return STAGE_MUL.thirdPlace;
+  if(g.includes("SEMI"))return STAGE_MUL.semiFinal;
+  if(g.includes("QUARTER"))return STAGE_MUL.quarterFinal;
+  if(g.includes("ROUND OF 16")||g.includes("LAST 16"))return STAGE_MUL.roundOf16;
+  if(g.includes("ROUND OF 32")||g.includes("LAST 32"))return STAGE_MUL.roundOf32;
+  return STAGE_MUL.group;
+}
+function calcPts(pick,result,group){
+  if(!result||result.homeScore==null||result.homeScore==="")return 0;
+  if(!pick||pick.homeScore==null||pick.homeScore==="")return 0;
+  const rH=+result.homeScore,rA=+result.awayScore,pH=+pick.homeScore,pA=+pick.awayScore;
+  const rTie=rH===rA,pTie=pH===pA,rHW=rH>rA,pHW=pH>pA;
+  const ok=(rTie&&pTie)||(rHW&&pHW)||(!rTie&&!rHW&&!pTie&&!pHW);
+  if(!ok)return 0;
+  const mul=stageMul(group);
+  if(rTie){return(pH===rH&&pA===rA?SCORING.correctDrawExact:SCORING.correctDrawOnly)*mul;}
+  const wg=rHW?rH:rA,lg=rHW?rA:rH,pwg=pHW?pH:pA,plg=pHW?pA:pH;
+  const gw=pwg===wg,gl=plg===lg;
+  return(gw?SCORING.correctWinnerWinner:gl?SCORING.correctWinnerLoser:SCORING.correctWinner)*mul;
+}
+function isLocked(iso){if(!iso)return false;return new Date()>=new Date(new Date(iso).getTime()-60000);}
+function countdown(iso){
+  if(!iso)return null;
+  const diff=new Date(new Date(iso).getTime()-60000)-new Date();
+  if(diff<=0)return null;
+  const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+  if(h>48)return Math.floor(h/24)+"d "+h%24+"h";
+  if(h>0)return h+"h "+m+"m";
+  if(m>0)return m+"m "+s+"s";
+  return s+"s";
+}
+function ptsBadge(pts){
+  const[bg,col]=pts>=10?["#0e2a14","#5de890"]:pts>=6?["#2a1f00","#F0A500"]:pts>=3?["#0a1a2a","#3E94D4"]:["transparent","#555"];
+  return `<span class="pts-badge" style="background:${bg};border:1px solid ${col}44;color:${col}">+${pts}pts</span>`;
+}
+function weatherHTML(w,lang){
+  if(!w||w.temp==null)return "";
+  const t=STRINGS[lang];
+  return `<div class="weather-badge"><span>${WMO_ICONS[w.code]||"🌡️"}</span><span style="color:#E8EDF5;font-weight:600">${w.temp}°F</span><span style="color:#3A5A80">·</span><span style="color:#7A9CC0">${WMO_CODES[w.code]||""}</span><span style="color:#3A5A80">·</span><span style="color:#7A9CC0">${w.wind} ${t.wind}</span>${w.precip>15?`<span style="color:#3A5A80">·</span><span style="color:#3E94D4">${w.precip}%</span>`:""}</div>`;
 }
 
-function WeatherBadge({ w, lang }) {
-  const t = STRINGS[lang];
-  if (!w) return null;
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:5,background:C.dimmer,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"4px 10px",fontSize:"0.74rem",fontFamily:"Inter,sans-serif"}}>
-      <span>{WMO_ICONS[w.code] || "?"}</span>
-      <span style={{color:C.offWhite,fontWeight:600}}>{w.temp}°F</span>
-      <span style={{color:C.dim}}>·</span>
-      <span style={{color:C.muted}}>{WMO_CODES[lang][w.code] || ""}</span>
-      <span style={{color:C.dim}}>·</span>
-      <span style={{color:C.muted}}>{w.wind} {t.wind}</span>
-      {w.precip > 15 && <><span style={{color:C.dim}}>·</span><span style={{color:C.skyLight}}>{w.precip}%</span></>}
-    </div>
-  );
+// ── Storage ──────────────────────────────────────────────────────────────────
+const store={
+  get:async k=>{try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch{return null}},
+  set:async(k,v)=>{try{await window.storage.set(k,JSON.stringify(v))}catch{}}
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let STATE={
+  view:"entry",teamName:"",lang:"en",
+  matches:[...SAMPLE_MATCHES],results:{},allPicks:{},weather:{},
+  loading:true,dataLoading:false,dataError:"",
+  showApiConfig:false,tab:"picks",filter:"upcoming",adminTab:"results"
+};
+function t(){return STRINGS[STATE.lang];}
+
+// ── Fetch ────────────────────────────────────────────────────────────────────
+async function loadFixtures(){
+  const r=await fetch(PROXY);
+  if(!r.ok)throw new Error("Proxy error "+r.status);
+  const d=await r.json();
+  return(d.matches||[]).map((m,i)=>({
+    id:String(m.id||i),
+    date:(m.utcDate||"").split("T")[0],
+    kickoffISO:m.utcDate||"",
+    time:m.utcDate?new Date(m.utcDate).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/New_York"}):"",
+    home:m.homeTeam?.shortName||m.homeTeam?.name||"TBD",
+    away:m.awayTeam?.shortName||m.awayTeam?.name||"TBD",
+    homeCode:teamCode(m.homeTeam?.name),
+    awayCode:teamCode(m.awayTeam?.name),
+    venue:m.venue||"TBD",
+    group:m.group||m.stage||"Group Stage",
+    status:m.status||"TIMED"
+  }));
+}
+async function loadWeather(venue,iso){
+  const c=VENUE_COORDS[venue];if(!c||!iso)return null;
+  const date=iso.split("T")[0];
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&hourly=temperature_2m,weathercode,windspeed_10m,precipitation_probability&timezone=${encodeURIComponent(c.tz)}&start_date=${date}&end_date=${date}`;
+    const r=await fetch(url);const d=await r.json();
+    const lh=parseInt(new Date(iso).toLocaleString("en-US",{timeZone:c.tz,hour:"2-digit",hour12:false}))||12;
+    const idx=Math.min(lh,(d.hourly?.time?.length||1)-1);
+    const tc=d.hourly?.temperature_2m?.[idx];
+    return{temp:tc!=null?Math.round(tc*9/5+32):null,code:d.hourly?.weathercode?.[idx],wind:Math.round((d.hourly?.windspeed_10m?.[idx]||0)*0.621),precip:d.hourly?.precipitation_probability?.[idx]||0};
+  }catch{return null;}
+}
+async function refreshData(){
+  STATE.dataLoading=true;STATE.dataError="";render();
+  try{
+    let fm=SAMPLE_MATCHES;
+    try{fm=await loadFixtures();}catch(e){STATE.dataError=e.message+" — using sample data.";fm=SAMPLE_MATCHES;}
+    STATE.matches=fm;await store.set("wc-matches",fm);
+    const wm={},now=new Date(),max=new Date(now.getTime()+15*24*3600000);
+    const upcoming=fm.filter(m=>{if(!m.kickoffISO)return false;const k=new Date(m.kickoffISO);return k>=now&&k<=max;}).slice(0,12);
+    for(const m of upcoming){const w=await loadWeather(m.venue,m.kickoffISO);if(w)wm[m.id]=w;await new Promise(r=>setTimeout(r,150));}
+    STATE.weather=wm;await store.set("wc-weather",wm);
+  }catch(e){STATE.dataError=String(e);}
+  STATE.dataLoading=false;render();
 }
 
-
-function Countdown({ iso, lang }) {
-  const t = STRINGS[lang];
-  const [tl, setTl] = useState(countdown(iso));
-  useEffect(() => {
-    const timer = setInterval(() => setTl(countdown(iso)), 1000);
-    return () => clearInterval(timer);
-  }, [iso]);
-  if (!tl) return null;
-  const urgent = !tl.includes("d") && !tl.includes("h");
-  return (
-    <span style={{background:urgent?C.redDark:C.dimmer,border:"1px solid "+(urgent?C.red:C.navyBorder),borderRadius:4,padding:"2px 8px",color:urgent?"#ffaaaa":C.gold,fontSize:"0.7rem",fontFamily:"monospace",fontWeight:700,animation:urgent?"pulse 1s infinite":"none"}}>
-      {tl} {t.toLock}
-    </span>
-  );
+// ── Scoring helpers ──────────────────────────────────────────────────────────
+function matchById(){return Object.fromEntries(STATE.matches.map(m=>[m.id,m]));}
+function totalPts(picks){const mb=matchById();return Object.entries(picks).reduce((s,[mid,p])=>s+calcPts(p,STATE.results[mid],mb[mid]?.group),0);}
+function leaderboard(){
+  return Object.entries(STATE.allPicks).map(([tm,picks])=>({tm,pts:totalPts(picks),n:Object.keys(picks).length})).sort((a,b)=>b.pts-a.pts);
 }
 
-function PtsBadge({ pts }) {
-  const [bg,br,col] = pts>=10 ? ["#0e2a14","#1a5020","#5de890"] : pts>=6 ? ["#2a1f00","#503800",C.gold] : pts>=3 ? [C.dimmer,C.navyBorder,C.skyLight] : ["transparent",C.dim,C.dim];
-  return <span style={{background:bg,border:"1px solid "+br,color:col,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:"0.75rem",fontFamily:"monospace"}}>+{pts}pts</span>;
-}
-
-function MatchCard({ match, pick, onPick, result, w, lang }) {
-  const t = STRINGS[lang];
-  const [hs, setHs] = useState(pick?.homeScore ?? "");
-  const [as, setAs] = useState(pick?.awayScore ?? "");
-  const [saved, setSaved] = useState(false);
-  const locked = isLocked(match.kickoffISO);
-  const pts = pick && result ? calcPts(pick, result, match.group) : null;
-  const hasResult = result != null && result.homeScore != null && result.homeScore !== "";
-  const submit = () => {
-    if (hs === "" || as === "") return;
-    onPick(match.id, {homeScore: parseInt(hs), awayScore: parseInt(as)});
-    setSaved(true); setTimeout(() => setSaved(false), 2200);
-  };
-  const topBar = hasResult ? (pts > 0 ? "linear-gradient(90deg,"+C.gold+",#5de890)" : C.dim) : locked ? C.dimmer : "linear-gradient(90deg,"+C.red+","+C.sky+")";
-  const inp = {width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.25rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"};
-  const matchDate = match.kickoffISO ? new Date(match.kickoffISO).toLocaleDateString(lang==="pt"?"pt-BR":"en-US",{weekday:"short",month:"short",day:"numeric"}) : match.date;
-  return (
-    <div style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:"16px 18px",marginBottom:9,position:"relative",overflow:"hidden",boxShadow:"0 4px 16px "+C.navyDeep+"88"}}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:topBar}} />
-      <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:5,marginBottom:10}}>
-        <div>
-          <div style={{color:C.red,fontSize:"0.67rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",display:"flex",alignItems:"center",gap:6}}>
-              {match.group}
-              <span style={{background:C.dimmer,color:C.gold,borderRadius:3,padding:"1px 5px",fontSize:"0.62rem",letterSpacing:0}}>x{stageMultiplier(match.group)}</span>
-            </div>
-          <div style={{color:C.dim,fontSize:"0.67rem",marginTop:1}}>📍 {match.venue}</div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-          <div style={{color:C.muted,fontSize:"0.71rem"}}>{matchDate} · {match.time} ET</div>
-          {!locked && !hasResult && <Countdown iso={match.kickoffISO} lang={lang} />}
-          {locked && !hasResult && <span style={{color:C.dim,fontSize:"0.67rem"}}>{t.picksLocked}</span>}
-        </div>
-      </div>
-      {(w || o) && (
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-          {w && <WeatherBadge w={w} lang={lang} />}
-        </div>
-      )}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"10px 0"}}>
-        <div style={{flex:1}}>
-          <div style={{marginBottom:3}}><FlagImg code={match.homeFlag} /></div>
-          <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.home}</div>
-        </div>
-        <div>
-          {hasResult ? (
-            <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <span style={{color:C.gold,fontFamily:"monospace",fontSize:"1.8rem",fontWeight:700}}>{result.homeScore}</span>
-              <span style={{color:C.dim}}>-</span>
-              <span style={{color:C.gold,fontFamily:"monospace",fontSize:"1.8rem",fontWeight:700}}>{result.awayScore}</span>
-            </div>
-          ) : (
-            <div style={{background:C.navyDeep,border:"1px solid "+C.dimmer,borderRadius:6,padding:"6px 14px"}}>
-              <span style={{color:C.dimmer,fontSize:"0.85rem",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2}}>{t.vs}</span>
-            </div>
-          )}
-        </div>
-        <div style={{flex:1,textAlign:"right"}}>
-          <div style={{marginBottom:3}}><FlagImg code={match.awayFlag} /></div>
-          <div style={{color:C.offWhite,fontWeight:700,fontSize:"0.92rem",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{match.away}</div>
-        </div>
-      </div>
-      <div style={{marginTop:10,borderTop:"1px solid "+C.dimmer,paddingTop:11,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
-        <span style={{color:C.dim,fontSize:"0.71rem",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif"}}>{t.yourPick}</span>
-        {locked || hasResult ? (
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {pick ? (
-              <>
-                <span style={{color:C.muted,fontFamily:"monospace",fontSize:"0.95rem"}}>{pick.homeScore}-{pick.awayScore}</span>
-                {pts !== null && <PtsBadge pts={pts} />}
-              </>
-            ) : <span style={{color:C.dimmer,fontSize:"0.78rem",fontStyle:"italic"}}>{t.noPick}</span>}
-          </div>
-        ) : (
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <input type="number" min={0} max={20} value={hs} onChange={e=>setHs(e.target.value)} style={inp} />
-            <span style={{color:C.dim}}>-</span>
-            <input type="number" min={0} max={20} value={as} onChange={e=>setAs(e.target.value)} style={inp} />
-            <button className="btn" onClick={submit} style={{
-              background: saved ? "#1a4a20" : (hs !== "" && as !== "") ? "linear-gradient(135deg,"+C.red+","+C.redDark+")" : C.dimmer,
-              color: saved ? "#5de890" : C.white,
-              border:"none",borderRadius:6,padding:"7px 13px",fontSize:"0.78rem",fontWeight:700,
-              opacity: (hs===""||as==="") ? 0.4 : 1,
-              boxShadow: (hs!==""&&as!==""&&!saved) ? "0 2px 10px "+C.redGlow : "none",
-            }}>
-              {saved ? t.saved : pick ? t.update : t.lockIn}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TopBar({ tag, right, lang, setLang }) {
-  const t = STRINGS[lang];
-  return (
-    <div style={{background:C.navyDeep,borderBottom:"1px solid "+C.navyBorder,padding:"13px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 20px "+C.navyDeep,flexWrap:"wrap",gap:8}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.35rem",color:C.gold,letterSpacing:4}}>{t.appTitle}</span>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.35rem",color:C.white,letterSpacing:2}}>{t.appYear}</span>
-        {tag && <span style={{background:C.red,color:C.white,fontSize:"0.62rem",fontWeight:700,borderRadius:3,padding:"2px 7px",letterSpacing:1}}>{tag}</span>}
-        <LangSwitch lang={lang} setLang={setLang} />
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>{right}</div>
-    </div>
-  );
-}
-
-function Tabs({ tabs, active, onChange }) {
-  return (
-    <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-      {tabs.map(([k,l]) => (
-        <button key={k} className="btn" onClick={()=>onChange(k)} style={{
-          background: active===k ? "linear-gradient(135deg,"+C.red+","+C.redDark+")" : "transparent",
-          color: active===k ? C.white : C.dim,
-          border: active===k ? "none" : "1px solid "+C.dimmer,
-          borderRadius:7,padding:"6px 16px",fontSize:"0.78rem",fontWeight:700,letterSpacing:1,
-          textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",
-          boxShadow: active===k ? "0 2px 12px "+C.redGlow : "none",
-        }}>{l}</button>
-      ))}
-    </div>
-  );
-}
-
-function Filters({ filters, active, onChange }) {
-  return (
-    <div style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap"}}>
-      {filters.map(([k,l]) => (
-        <button key={k} className="btn" onClick={()=>onChange(k)} style={{
-          background: active===k ? C.dimmer : "transparent",
-          color: active===k ? C.gold : C.dim,
-          border: "1px solid "+(active===k ? C.navyBorder : C.dimmer),
-          borderRadius:6,padding:"4px 12px",fontSize:"0.72rem",fontWeight:600,
-        }}>{l}</button>
-      ))}
-    </div>
-  );
-}
-
-function ApiConfig({ onSave, existing, lang }) {
-  const t = STRINGS[lang];
-  const [fd, setFd] = useState(existing?.footballDataKey || "");
-  return (
-    <div style={{background:C.navyCard,border:"1px solid "+C.navyBorder,borderRadius:16,padding:32,maxWidth:480,margin:"0 auto",fontFamily:"Inter,sans-serif",position:"relative",zIndex:1}}>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.8rem",color:C.gold,letterSpacing:4,marginBottom:4}}>{t.apiConfig}</div>
-      <p style={{color:C.muted,fontSize:"0.83rem",marginBottom:24}}>{t.apiTagline}</p>
-      <div style={{marginBottom:18}}>
-        <label style={{color:C.muted,fontSize:"0.74rem",fontWeight:600,letterSpacing:1.2,textTransform:"uppercase",display:"block",marginBottom:6}}>
-          {t.fdLabel} — <a href="https://www.football-data.org/client/register" target="_blank" rel="noreferrer" style={{color:C.gold,fontSize:"0.7rem"}}>{t.freeKey}</a>
-        </label>
-        <input value={fd} onChange={e=>setFd(e.target.value)} placeholder="Paste your API key here"
-          style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"11px 14px",color:C.white,fontSize:"0.9rem"}}/>
-        <div style={{color:C.dim,fontSize:"0.71rem",marginTop:4}}>{t.fdNote}</div>
-      </div>
-      <div style={{background:"#0c2010",border:"1px solid #1a4020",borderRadius:8,padding:"10px 14px",marginBottom:22}}>
-        <div style={{color:"#5de890",fontSize:"0.78rem"}}>{t.weatherNote}</div>
-      </div>
-      <button className="btn" onClick={()=>onSave({footballDataKey:fd})} style={{width:"100%",background:"linear-gradient(135deg,"+C.gold+","+C.goldLight+")",color:C.navyDeep,border:"none",borderRadius:8,padding:14,fontWeight:700,fontSize:"1rem",letterSpacing:1.5,fontFamily:"'Barlow Condensed',sans-serif",marginBottom:10}}>
-        {t.saveLoad}
-      </button>
-      <button className="btn" onClick={()=>onSave(null)} style={{width:"100%",background:"transparent",border:"1px solid "+C.navyBorder,color:C.dim,borderRadius:8,padding:10,fontSize:"0.83rem"}}>
-        {t.skipSample}
-      </button>
-    </div>
-  );
-}
-
-function EntryScreen({ onEnter, onAdmin, lang, setLang }) {
-  const t = STRINGS[lang];
-  const [code,setCode]=useState(""), [team,setTeam]=useState(""), [err,setErr]=useState("");
-  const [acode,setAcode]=useState(""), [showA,setShowA]=useState(false);
-  const tryJoin = () => {
-    if (code.trim().toUpperCase() !== PASS) return setErr(t.incorrectPass);
-    if (!team.trim()) return setErr(t.enterTeam);
-    setErr(""); onEnter(team.trim());
-  };
-  const tryAdmin = () => {
-    if (acode.trim().toUpperCase() !== ADMIN_PASS) return setErr(t.wrongAdmin);
-    setErr(""); onAdmin();
-  };
-  return (
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 0%, #142e5e 0%, "+C.navy+" 35%, "+C.navyDeep+" 70%, #0a0010 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif",padding:24,position:"relative",overflow:"hidden"}}>
-      <style>{CSS}</style>
-      <PitchBg />
-      <div style={{position:"fixed",top:0,left:0,right:0,height:4,background:"linear-gradient(90deg,"+C.red+","+C.redDark+" 40%,"+C.red+")",zIndex:10}} />
-
-      {/* Lang switch top-right */}
-      <div style={{position:"fixed",top:14,right:18,zIndex:30}}>
-        <LangSwitch lang={lang} setLang={setLang} />
-      </div>
-
-      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-55%)",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle, "+C.sky+"18 0%, transparent 65%)",pointerEvents:"none"}} />
-
-      <div style={{textAlign:"center",marginBottom:44,position:"relative",zIndex:1,animation:"fadeUp .5s ease both"}}>
-        <div style={{fontSize:"5rem",lineHeight:1,marginBottom:6,filter:"drop-shadow(0 0 24px "+C.gold+"88)"}}>🏆</div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14,marginBottom:4}}>
-          <div style={{height:2,width:60,background:"linear-gradient(90deg,transparent,"+C.red+")"}} />
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(2.8rem,10vw,6rem)",color:C.white,letterSpacing:8,lineHeight:.9,textShadow:"0 0 40px "+C.sky+"66"}}>{t.worldCup}</div>
-          <div style={{height:2,width:60,background:"linear-gradient(90deg,"+C.red+",transparent)"}} />
-        </div>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(1.6rem,4vw,2.8rem)",background:"linear-gradient(90deg,"+C.gold+","+C.goldLight+","+C.gold+")",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:10,margin:"4px 0 10px"}}>{t.pickem}</div>
-        <div style={{color:C.muted,fontSize:"0.8rem"}}>{t.tagline}</div>
-      </div>
-
-      <div style={{background:"linear-gradient(145deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:16,padding:34,width:"100%",maxWidth:400,position:"relative",zIndex:1,boxShadow:"0 24px 60px "+C.navyDeep+"cc",animation:"fadeUp .5s .1s ease both",animationFillMode:"both"}}>
-        <div style={{position:"absolute",top:0,left:24,right:24,height:2,background:"linear-gradient(90deg,transparent,"+C.gold+",transparent)",borderRadius:2}} />
-        <div style={{marginBottom:16}}>
-          <label style={{color:C.muted,fontSize:"0.73rem",fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:7}}>{t.teamNameLabel}</label>
-          <input value={team} onChange={e=>setTeam(e.target.value)} placeholder={t.teamNamePlaceholder}
-            style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"12px 14px",color:C.white,fontSize:"0.95rem"}} />
-        </div>
-        <div style={{marginBottom:22}}>
-          <label style={{color:C.muted,fontSize:"0.73rem",fontWeight:600,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:7}}>{t.passcodeLabel}</label>
-          <input value={code} onChange={e=>setCode(e.target.value)} type="password" placeholder={t.passcodePlaceholder}
-            onKeyDown={e=>e.key==="Enter"&&tryJoin()}
-            style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"12px 14px",color:C.white,fontSize:"0.95rem"}} />
-        </div>
-        {err && <div style={{color:"#ff7070",fontSize:"0.82rem",marginBottom:12,background:"#2a080a",border:"1px solid #4a1018",borderRadius:6,padding:"7px 12px"}}>{err}</div>}
-        <button className="btn" onClick={tryJoin} style={{width:"100%",background:"linear-gradient(135deg,"+C.red+","+C.redDark+")",color:C.white,border:"none",borderRadius:8,padding:13,fontSize:"1rem",fontWeight:700,letterSpacing:1.5,fontFamily:"'Barlow Condensed',sans-serif",boxShadow:"0 4px 20px "+C.redGlow}}>
-          {t.joinBtn}
-        </button>
-        <div style={{marginTop:22,borderTop:"1px solid "+C.dimmer,paddingTop:18}}>
-          {!showA ? (
-            <button className="btn" onClick={()=>setShowA(true)} style={{width:"100%",background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:8,padding:9,fontSize:"0.8rem"}}>{t.commissionerAccess}</button>
-          ) : (
-            <>
-              <input value={acode} onChange={e=>setAcode(e.target.value)} type="password" placeholder={t.adminPasscodePlaceholder}
-                onKeyDown={e=>e.key==="Enter"&&tryAdmin()}
-                style={{width:"100%",background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:8,padding:"10px 14px",color:C.white,fontSize:"0.88rem",marginBottom:8}} />
-              <button className="btn" onClick={tryAdmin} style={{width:"100%",background:C.dimmer,color:C.gold,border:"1px solid "+C.gold+"44",borderRadius:8,padding:10,fontSize:"0.88rem",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.enterAdmin}</button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div style={{marginTop:28,position:"relative",zIndex:1,maxWidth:480,width:"100%"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px 20px",marginBottom:16}}>
-          <span style={{color:"#7A9CC0",fontSize:"0.78rem"}}>{t.score0}: <b style={{color:"#aaa"}}>0 {t.pts}</b></span>
-          <span style={{color:C.offWhite,fontSize:"0.78rem"}}>{t.score3}: <b style={{color:"#60c8ff"}}>3 {t.pts}</b></span>
-          <span style={{color:C.offWhite,fontSize:"0.78rem"}}>{t.score4}: <b style={{color:C.goldLight}}>4 {t.pts}</b></span>
-          <span style={{color:C.offWhite,fontSize:"0.78rem"}}>{t.score6win}: <b style={{color:C.goldLight}}>6 {t.pts}</b></span>
-          <span style={{color:C.offWhite,fontSize:"0.78rem"}}>{t.score6draw}: <b style={{color:C.goldLight}}>6 {t.pts}</b></span>
-          <span style={{color:C.offWhite,fontSize:"0.78rem"}}>{t.score10}: <b style={{color:"#5de890"}}>10 {t.pts}</b></span>
-        </div>
-        <div style={{background:"#0F2847",border:"1px solid #1A3560",borderRadius:8,padding:"12px 16px"}}>
-          <div style={{color:C.gold,fontSize:"0.75rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:9}}>{t.multiplierTitle}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"7px 12px",fontSize:"0.76rem"}}>
-            <span style={{color:C.offWhite}}>{t.multGroup}: <b style={{color:C.gold}}>x5</b></span>
-            <span style={{color:C.offWhite}}>{t.multR32}: <b style={{color:C.gold}}>x6</b></span>
-            <span style={{color:C.offWhite}}>{t.multR16}: <b style={{color:C.gold}}>x7</b></span>
-            <span style={{color:C.offWhite}}>{t.multQF}: <b style={{color:"#FFD04A"}}>x8</b></span>
-            <span style={{color:C.offWhite}}>{t.multSF}: <b style={{color:"#FFD04A"}}>x9</b></span>
-            <span style={{color:C.offWhite}}>{t.multF}: <b style={{color:"#5de890"}}>x10</b></span>
-          </div>
-        </div>
-      </div>
-      <div style={{position:"fixed",bottom:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:10}} />
-    </div>
-  );
-}
-
-function ParticipantView({ teamName, matches, results, allPicks, weather, onSavePick, onLogout, lang, setLang }) {
-  const t = STRINGS[lang];
-  const [tab, setTab] = useState("picks");
-  const [filter, setFilter] = useState("upcoming");
-  const myPicks = allPicks[teamName] || {};
-  const matchById = Object.fromEntries(matches.map(m => [m.id, m]));
-  const totalPts = Object.entries(myPicks).reduce((s,[mid,p]) => s + calcPts(p, results[mid], matchById[mid]?.group), 0);
-  const board = Object.entries(allPicks).map(([tm,picks]) => ({
-    tm, pts:Object.entries(picks).reduce((s,[mid,p])=>s+calcPts(p,results[mid],matchById[mid]?.group),0), n:Object.keys(picks).length
-  })).sort((a,b)=>b.pts-a.pts);
-  const rank = board.findIndex(e=>e.tm===teamName) + 1;
-  const fm = matches.filter(m => {
-    if (filter==="all") return true;
-    if (filter==="upcoming") return !results[m.id] && !isLocked(m.kickoffISO);
-    if (filter==="locked") return isLocked(m.kickoffISO) && !results[m.id];
-    return !!results[m.id];
+// ── Countdown timers ─────────────────────────────────────────────────────────
+let _timers=[];
+function clearTimers(){_timers.forEach(clearInterval);_timers=[];}
+function startTimers(){
+  clearTimers();
+  document.querySelectorAll("[data-countdown]").forEach(el=>{
+    const iso=el.dataset.countdown;
+    const update=()=>{const cd=countdown(iso);if(!cd){el.textContent="";el.style.display="none";}else el.textContent=cd+" "+t().toLock;};
+    update();_timers.push(setInterval(update,1000));
   });
-  const right = (
-    <div style={{display:"flex",alignItems:"center",gap:12}}>
-      <div style={{textAlign:"right"}}>
-        <div style={{color:C.gold,fontWeight:700,fontFamily:"monospace",fontSize:"1.05rem"}}>{totalPts} {t.pts}</div>
-        <div style={{color:C.dim,fontSize:"0.67rem"}}>{t.rank} #{rank} / {board.length}</div>
-      </div>
-      <button className="btn" onClick={onLogout} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.logout}</button>
-    </div>
-  );
-  return (
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 0%, #142e5e 0%, "+C.navy+" 40%, "+C.navyDeep+" 100%)",fontFamily:"Inter,sans-serif",paddingBottom:60,position:"relative"}}>
-      <style>{CSS}</style>
-      <PitchBg />
-      <div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:30}} />
-      <TopBar right={right} lang={lang} setLang={setLang} />
-      <div style={{maxWidth:720,margin:"0 auto",padding:"20px 12px",position:"relative",zIndex:1}}>
-        <Tabs tabs={[["picks",t.myPicks],["leaderboard",t.leaderboard]]} active={tab} onChange={setTab} />
-        {tab==="picks" && (
-          <>
-            <Filters filters={[["upcoming",t.open],["locked",t.locked],["completed",t.final],["all",t.all]]} active={filter} onChange={setFilter} />
-            {fm.length===0 && <p style={{color:C.dim,fontStyle:"italic"}}>{t.noMatches}</p>}
-            {fm.map(m => <MatchCard key={m.id} match={m} pick={myPicks[m.id]} onPick={onSavePick} result={results[m.id]} w={weather[m.id]} lang={lang} />)}
-          </>
-        )}
-        {tab==="leaderboard" && (
-          <>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.standings}</div>
-            {board.length===0 && <p style={{color:C.dim}}>{t.noPicks}</p>}
-            {board.map((e,i) => (
-              <div key={e.tm} style={{background:e.tm===teamName?"linear-gradient(135deg,#142e14,"+C.navyCard+")":"linear-gradient(135deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+(e.tm===teamName?"#2a4a2a":C.navyBorder),borderRadius:10,padding:"13px 18px",marginBottom:7,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}>
-                {e.tm===teamName && <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:"linear-gradient("+C.gold+",#5de890)"}} />}
-                <span style={{fontSize:"0.95rem",width:32,textAlign:"center",color:i===0?C.gold:i===1?"#bbb":i===2?"#cd7f32":C.dim,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{i===0?"1°":i===1?"2°":i===2?"3°":"#"+(i+1)}</span>
-                <div style={{flex:1}}>
-                  <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{e.tm}
-                    {e.tm===teamName && <span style={{color:"#5de890",fontSize:"0.67rem",marginLeft:6,background:"#0e2a14",padding:"1px 6px",borderRadius:3}}>{t.you}</span>}
-                  </div>
-                  <div style={{color:C.dim,fontSize:"0.7rem"}}>{e.n} {t.picks}</div>
-                </div>
-                <div style={{fontFamily:"monospace",fontSize:"1.15rem",fontWeight:700,color:C.gold}}>{e.pts} {t.pts}</div>
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
 }
 
-function AdminView({ matches, results, allPicks, weather, onSaveResult, onLogout, onRefresh, onConfigApis, loading, dataError, lang, setLang }) {
-  const t = STRINGS[lang];
-  const [tab, setTab] = useState("results");
-  const [edits, setEdits] = useState({});
-  const matchById = Object.fromEntries(matches.map(m => [m.id, m]));
-  const board = Object.entries(allPicks).map(([tm,picks]) => ({
-    tm, pts:Object.entries(picks).reduce((s,[mid,p])=>s+calcPts(p,results[mid],matchById[mid]?.group),0), n:Object.keys(picks).length, picks
-  })).sort((a,b)=>b.pts-a.pts);
-  const right = (
-    <div style={{display:"flex",gap:7}}>
-      <button className="btn" onClick={onRefresh} disabled={loading} style={{background:C.dimmer,color:C.gold,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem",fontWeight:600,opacity:loading?.5:1}}>
-        <span style={{display:"inline-block",animation:loading?"spin 1s linear infinite":"none"}}>↻</span> {loading?t.loading:t.refresh}
-      </button>
-      <button className="btn" onClick={onConfigApis} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.apis}</button>
-      <button className="btn" onClick={onLogout} style={{background:"transparent",border:"1px solid "+C.dimmer,color:C.dim,borderRadius:6,padding:"5px 12px",fontSize:"0.75rem"}}>{t.logout}</button>
-    </div>
-  );
-  return (
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 50% 0%, #142e5e 0%, "+C.navy+" 40%, "+C.navyDeep+" 100%)",fontFamily:"Inter,sans-serif",paddingBottom:60,position:"relative"}}>
-      <style>{CSS}</style>
-      <PitchBg />
-      <div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+C.red+","+C.sky+","+C.gold+")",zIndex:30}} />
-      <TopBar tag={t.commissioner} right={right} lang={lang} setLang={setLang} />
-      {dataError && <div style={{background:"#1a0812",border:"1px solid "+C.red+"44",borderRadius:8,margin:"12px 16px 0",padding:"8px 14px",color:"#ff9090",fontSize:"0.78rem",position:"relative",zIndex:1}}>{dataError}</div>}
-      <div style={{maxWidth:900,margin:"0 auto",padding:"20px 12px",position:"relative",zIndex:1}}>
-        <Tabs tabs={[["results",t.results],["picks",t.allPicks],["leaderboard",t.leaderboard]]} active={tab} onChange={setTab} />
-        {tab==="results" && (
-          <>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.matchResults}</div>
-            {matches.map(m => {
-              const sv = results[m.id];
-              const ed = edits[m.id] ?? {homeScore:sv?.homeScore??"",awayScore:sv?.awayScore??""};
-              return (
-                <div key={m.id} style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:"15px 18px",marginBottom:9}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
-                    <div>
-                      <div style={{color:C.red,fontSize:"0.67rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:3}}>{m.group} · {m.date}</div>
-                      <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.92rem",display:"flex",alignItems:"center",gap:6}}><FlagImg code={m.homeFlag} size="sm"/> {m.home} vs {m.away} <FlagImg code={m.awayFlag} size="sm"/></div>
-                      <div style={{display:"flex",gap:6,marginTop:7,flexWrap:"wrap"}}>
-                        {weather[m.id] && <WeatherBadge w={weather[m.id]} lang={lang} />}
-                      </div>
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-                      <input type="number" min={0} max={20} value={ed.homeScore} onChange={e=>setEdits(p=>({...p,[m.id]:{...ed,homeScore:e.target.value}}))}
-                        style={{width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.15rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"}} />
-                      <span style={{color:C.dim}}>-</span>
-                      <input type="number" min={0} max={20} value={ed.awayScore} onChange={e=>setEdits(p=>({...p,[m.id]:{...ed,awayScore:e.target.value}}))}
-                        style={{width:48,background:C.navyDeep,border:"1px solid "+C.navyBorder,borderRadius:6,padding:"7px 0",color:C.gold,fontSize:"1.15rem",fontWeight:700,textAlign:"center",fontFamily:"monospace"}} />
-                      <button className="btn" onClick={()=>onSaveResult(m.id,ed)} style={{background:"linear-gradient(135deg,"+C.red+","+C.redDark+")",color:C.white,border:"none",borderRadius:6,padding:"7px 14px",fontSize:"0.8rem",fontWeight:700,boxShadow:"0 2px 10px "+C.redGlow}}>
-                        {sv ? t.update : t.save}
-                      </button>
-                      {sv && <span style={{color:"#5de890",fontSize:"0.75rem"}}>{sv.homeScore}-{sv.awayScore}</span>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </>
-        )}
-        {tab==="picks" && (
-          <>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.allPicksTitle}</div>
-            {board.length===0 && <p style={{color:C.dim}}>{t.noPicks}</p>}
-            {board.map(entry => (
-              <div key={entry.tm} style={{background:"linear-gradient(155deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:12,padding:16,marginBottom:12}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-                  <span style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{entry.tm}</span>
-                  <span style={{color:C.gold,fontFamily:"monospace",fontWeight:700,fontSize:"0.88rem"}}>{entry.pts} {t.pts} · {entry.n} {t.picks}</span>
-                </div>
-                {matches.map(m => {
-                  const p=entry.picks[m.id], r=results[m.id], pts=p&&r?calcPts(p,r,m.group):null;
-                  return (
-                    <div key={m.id} style={{display:"flex",justifyContent:"space-between",borderBottom:"1px solid "+C.dimmer,padding:"4px 0"}}>
-                      <span style={{color:C.dim,fontSize:"0.77rem",display:"flex",alignItems:"center",gap:4}}><FlagImg code={m.homeFlag} size="sm"/> {m.home} vs {m.away} <FlagImg code={m.awayFlag} size="sm"/></span>
-                      {p ? <div style={{display:"flex",gap:7,alignItems:"center"}}>
-                        <span style={{color:C.muted,fontFamily:"monospace",fontSize:"0.82rem"}}>{p.homeScore}-{p.awayScore}</span>
-                        {pts!==null && <PtsBadge pts={pts} />}
-                      </div> : <span style={{color:C.dimmer,fontSize:"0.77rem"}}>-</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </>
-        )}
-        {tab==="leaderboard" && (
-          <>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2rem",color:C.white,letterSpacing:4,marginBottom:20}}>{t.leaderboardTitle}</div>
-            {board.map((e,i) => (
-              <div key={e.tm} style={{background:"linear-gradient(135deg,"+C.navyMid+","+C.navyCard+")",border:"1px solid "+C.navyBorder,borderRadius:10,padding:"13px 18px",marginBottom:7,display:"flex",alignItems:"center",gap:14}}>
-                <span style={{color:i===0?C.gold:i===1?"#bbb":i===2?"#cd7f32":C.dim,fontSize:"0.95rem",width:32,textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{i===0?"1°":i===1?"2°":i===2?"3°":"#"+(i+1)}</span>
-                <div style={{flex:1}}>
-                  <div style={{color:C.offWhite,fontWeight:600,fontSize:"0.9rem"}}>{e.tm}</div>
-                  <div style={{color:C.dim,fontSize:"0.7rem"}}>{e.n} {t.picks}</div>
-                </div>
-                <div style={{fontFamily:"monospace",fontSize:"1.15rem",fontWeight:700,color:C.gold}}>{e.pts} {t.pts}</div>
-              </div>
-            ))}
-          </>
-        )}
+// ── HTML Builders ────────────────────────────────────────────────────────────
+function matchCardHTML(m,pick,result,weather,lang,adminMode){
+  const locked=isLocked(m.kickoffISO);
+  const pts=pick&&result?calcPts(pick,result,m.group):null;
+  const hasResult=result!=null&&result.homeScore!=null&&result.homeScore!=="";
+  const mul=stageMul(m.group);
+  const topColor=hasResult?(pts>0?"linear-gradient(90deg,#F0A500,#5de890)":"#3A5A80"):locked?"#1E3354":"linear-gradient(90deg,#C8102E,#1D70B8)";
+  const dateStr=m.kickoffISO?new Date(m.kickoffISO).toLocaleDateString(lang==="pt"?"pt-BR":"en-US",{weekday:"short",month:"short",day:"numeric"}):m.date;
+  const wHTML=weatherHTML(weather,lang);
+  const T=STRINGS[lang];
+
+  let pickSection="";
+  if(adminMode){
+    const sv=result;
+    pickSection=`<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+      <input type="number" min="0" max="20" class="score-inp" value="${sv?.homeScore??""}" data-mid="${m.id}" data-side="home" style="width:48px">
+      <span style="color:#3A5A80">–</span>
+      <input type="number" min="0" max="20" class="score-inp" value="${sv?.awayScore??""}" data-mid="${m.id}" data-side="away" style="width:48px">
+      <button onclick="saveResult('${m.id}')" style="background:linear-gradient(135deg,#C8102E,#9A0C23);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer">${sv?T.update:T.save}</button>
+      ${sv?`<span style="color:#5de890;font-size:.75rem">${sv.homeScore}–${sv.awayScore}</span>`:""}
+    </div>`;
+  } else if(locked||hasResult){
+    pickSection=`<div style="display:flex;align-items:center;gap:8px">
+      ${pick?`<span style="color:#7A9CC0;font-family:monospace;font-size:.95rem">${pick.homeScore}–${pick.awayScore}</span>${pts!==null?ptsBadge(pts):""}`:
+      `<span style="color:#1E3354;font-size:.78rem;font-style:italic">${T.noPick}</span>`}
+    </div>`;
+  } else {
+    const hs=pick?.homeScore??"",as=pick?.awayScore??"";
+    pickSection=`<div style="display:flex;align-items:center;gap:7px">
+      <input type="number" min="0" max="20" class="score-inp" value="${hs}" id="hs-${m.id}" onchange="updatePick('${m.id}')">
+      <span style="color:#3A5A80">–</span>
+      <input type="number" min="0" max="20" class="score-inp" value="${as}" id="as-${m.id}" onchange="updatePick('${m.id}')">
+      <button id="lock-${m.id}" class="lock-btn" onclick="lockPick('${m.id}')" style="background:${hs!==''&&as!==''?'linear-gradient(135deg,#C8102E,#9A0C23)':'#1E3354'};color:${hs!==''&&as!==''?'#fff':'#3A5A80'};opacity:${hs===''||as===''?'0.4':'1'}">${pick?T.update:T.lockIn}</button>
+    </div>`;
+  }
+
+  return `<div class="card">
+    <div class="card-top" style="background:${topColor}"></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+      <div>
+        <div style="color:#C8102E;font-size:.67rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif">
+          ${m.group} <span style="background:#1E3354;color:#F0A500;border-radius:3px;padding:1px 5px;font-size:.6rem">x${mul}</span>
+        </div>
+        <div style="color:#3A5A80;font-size:.67rem;margin-top:2px">📍 ${m.venue}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="color:#7A9CC0;font-size:.71rem">${dateStr} · ${m.time} ET</div>
+        ${!locked&&!hasResult?`<span data-countdown="${m.kickoffISO}" style="background:#1E3354;border:1px solid #1A3560;border-radius:4px;padding:2px 8px;color:#F0A500;font-size:.7rem;font-family:monospace;font-weight:700"></span>`:""}
+        ${locked&&!hasResult?`<span style="color:#3A5A80;font-size:.67rem">${T.picksLocked}</span>`:""}
       </div>
     </div>
-  );
-}
-
-function App() {
-  const [view,setView] = useState("entry");
-  const [teamName,setTeamName] = useState("");
-  const [matches,setMatches] = useState([]);
-  const [results,setResults] = useState({});
-  const [allPicks,setAllPicks] = useState({});
-  const [weather,setWeather] = useState({});
-  const [apiKeys,setApiKeys] = useState(null);
-  const [showApiConfig,setShowApiConfig] = useState(false);
-  const [loading,setLoading] = useState(true);
-  const [dataLoading,setDataLoading] = useState(false);
-  const [dataError,setDataError] = useState("");
-  const [lang,setLang] = useState("en");
-
-  useEffect(() => {
-    (async () => {
-      const [r,p,w,k,m,l] = await Promise.all([
-        store.get("wc-results"), store.get("wc-picks"), store.get("wc-weather"),
-        store.get("wc-apikeys"), store.get("wc-matches"),
-        store.get("wc-lang"),
-      ]);
-      if (r) setResults(r);
-      if (p) setAllPicks(p);
-      if (w) setWeather(w);
-      if (k) setApiKeys(k);
-      if (l) setLang(l);
-      setMatches(m || SAMPLE);
-      setLoading(false);
-      // Auto-load live fixtures via proxy on every startup (key lives in the worker)
-      loadLiveDataViaProxy();
-    })();
-  }, []);
-
-  const handleSetLang = (l) => { setLang(l); store.set("wc-lang", l); };
-
-  // Loads fixtures + weather through the Cloudflare Worker — no API key needed in browser
-  const loadLiveDataViaProxy = useCallback(async () => {
-    setDataLoading(true); setDataError("");
-    try {
-      let fm = SAMPLE;
-      try { fm = await loadFixtures(); }
-      catch (e) { setDataError(STRINGS[lang].fixturesError + e.message + STRINGS[lang].usingSample); fm = SAMPLE; }
-      setMatches(fm); store.set("wc-matches", fm);
-      const wm = {};
-      const now = new Date();
-      const maxDate = new Date(now.getTime() + 15 * 24 * 3600 * 1000); // 15-day forecast window
-      const weatherMatches = fm.filter(m => {
-        if (!m.kickoffISO) return false;
-        const ko = new Date(m.kickoffISO);
-        return ko >= now && ko <= maxDate;
-      }).slice(0, 12);
-      for (const m of weatherMatches) {
-        const w = await loadWeather(m.venue, m.kickoffISO);
-        if (w) wm[m.id] = w;
-        await new Promise(r=>setTimeout(r,150));
-      }
-      setWeather(wm); store.set("wc-weather", wm);
-    } catch (e) { setDataError(String(e)); }
-    setDataLoading(false);
-  }, [lang]);
-
-  const loadLiveData = loadLiveDataViaProxy;
-
-  const handleApiSave = async (keys) => {
-    setApiKeys(keys);
-    if (keys) store.set("wc-apikeys", keys);
-    setShowApiConfig(false);
-    await loadLiveData(keys);
-  };
-
-  const handleSavePick = useCallback(async (mid, pick) => {
-    setAllPicks(prev => {
-      const u = {...prev, [teamName]: {...(prev[teamName]||{}), [mid]: pick}};
-      store.set("wc-picks", u);
-      return u;
-    });
-  }, [teamName]);
-
-  const handleSaveResult = useCallback(async (mid, result) => {
-    setResults(prev => {
-      const u = {...prev, [mid]: result};
-      store.set("wc-results", u);
-      return u;
-    });
-  }, []);
-
-  if (loading) return (
-    <div style={{minHeight:"100vh",background:C.navyDeep,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{CSS}</style>
-      <span style={{color:C.gold,fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.4rem",letterSpacing:4}}>{STRINGS[lang].loading.toUpperCase()}</span>
-    </div>
-  );
-
-  if (showApiConfig) return (
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at 30% 0%, #142e5e, "+C.navyDeep+")",display:"flex",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
-      <style>{CSS}</style>
-      <PitchBg />
-      <div style={{position:"fixed",top:14,right:18,zIndex:30}}><LangSwitch lang={lang} setLang={handleSetLang} /></div>
-      <div style={{width:"100%",maxWidth:500,position:"relative",zIndex:1}}>
-        <ApiConfig onSave={handleApiSave} existing={apiKeys} lang={lang} />
+    ${wHTML?`<div style="margin-bottom:12px">${wHTML}</div>`:""}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0">
+      <div style="flex:1">
+        <div style="margin-bottom:3px">${flagImg(m.homeCode)}</div>
+        <div style="color:#E8EDF5;font-weight:700;font-size:.92rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${m.home}</div>
+      </div>
+      <div>
+        ${hasResult?
+          `<div style="display:flex;gap:10px;align-items:center"><span style="color:#F0A500;font-family:monospace;font-size:1.8rem;font-weight:700">${result.homeScore}</span><span style="color:#3A5A80">–</span><span style="color:#F0A500;font-family:monospace;font-size:1.8rem;font-weight:700">${result.awayScore}</span></div>`:
+          `<div style="background:#060E1F;border:1px solid #1E3354;border-radius:6px;padding:6px 14px"><span style="color:#1E3354;font-family:'Bebas Neue',sans-serif;letter-spacing:2px">${T.vs}</span></div>`
+        }
+      </div>
+      <div style="flex:1;text-align:right">
+        <div style="margin-bottom:3px">${flagImg(m.awayCode)}</div>
+        <div style="color:#E8EDF5;font-weight:700;font-size:.92rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${m.away}</div>
       </div>
     </div>
-  );
-
-  if (view==="entry") return <EntryScreen onEnter={n=>{setTeamName(n);setView("participant");}} onAdmin={()=>setView("admin")} lang={lang} setLang={handleSetLang} />;
-  if (view==="admin") return <AdminView matches={matches} results={results} allPicks={allPicks} weather={weather} onSaveResult={handleSaveResult} onLogout={()=>setView("entry")} onRefresh={()=>loadLiveData(apiKeys)} onConfigApis={()=>setShowApiConfig(true)} loading={dataLoading} dataError={dataError} lang={lang} setLang={handleSetLang} />;
-  return <ParticipantView teamName={teamName} matches={matches} results={results} allPicks={allPicks} weather={weather} onSavePick={handleSavePick} onLogout={()=>{setTeamName("");setView("entry");}} lang={lang} setLang={handleSetLang} />;
+    <div style="margin-top:10px;border-top:1px solid #1E3354;padding-top:11px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <span style="color:#3A5A80;font-size:.71rem;text-transform:uppercase;letter-spacing:1px;font-family:'Barlow Condensed',sans-serif">${T.yourPick}</span>
+      ${pickSection}
+    </div>
+  </div>`;
 }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(App));
-  </script>
+// ── Render ───────────────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById("app");
+  const T=t();
+  clearTimers();
+
+  if(STATE.loading){app.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><span style="color:#F0A500;font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:4px">${T.loading}...</span></div>`;return;}
+
+  if(STATE.view==="entry"){renderEntry(app,T);return;}
+  if(STATE.showApiConfig){renderApiConfig(app,T);return;}
+  if(STATE.view==="admin"){renderAdmin(app,T);return;}
+  renderParticipant(app,T);
+}
+
+function langSwitch(){
+  return `<div class="lang-sw" onclick="toggleLang()">
+    <div class="lang-opt ${STATE.lang==='en'?'on':'off'}"><img src="https://flagcdn.com/20x15/us.png" style="width:20px;height:15px;border-radius:2px"> EN</div>
+    <div class="lang-opt ${STATE.lang==='pt'?'on':'off'}"><img src="https://flagcdn.com/20x15/br.png" style="width:20px;height:15px;border-radius:2px"> PT</div>
+  </div>`;
+}
+
+function renderEntry(app,T){
+  app.innerHTML=`
+  <div style="min-height:100vh;background:radial-gradient(ellipse at 30% 0%,#142e5e 0%,#0B1F3A 35%,#060E1F 70%,#0a0010 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative">
+    <div style="position:fixed;top:14px;right:18px;z-index:200">${langSwitch()}</div>
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,#1D70B818 0%,transparent 65%);pointer-events:none"></div>
+    <div class="fade" style="text-align:center;margin-bottom:40px;position:relative;z-index:1">
+      <div style="font-size:4.5rem;line-height:1;margin-bottom:6px;filter:drop-shadow(0 0 24px #F0A50088)">🏆</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:4px">
+        <div style="height:2px;width:60px;background:linear-gradient(90deg,transparent,#C8102E)"></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,10vw,5.5rem);color:#fff;letter-spacing:8px;line-height:.9;text-shadow:0 0 40px #1D70B866">${T.worldCup}</div>
+        <div style="height:2px;width:60px;background:linear-gradient(90deg,#C8102E,transparent)"></div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);background:linear-gradient(90deg,#F0A500,#FFD04A,#F0A500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:10px;margin:4px 0 10px">${T.pickem}</div>
+      <div style="color:#7A9CC0;font-size:.8rem">${T.tagline}</div>
+    </div>
+    <div class="fade" style="background:linear-gradient(145deg,#0F2847,#0D2040);border:1px solid #1A3560;border-radius:16px;padding:34px;width:100%;max-width:400px;position:relative;z-index:1;box-shadow:0 24px 60px #060E1Fcc;animation-delay:.1s">
+      <div style="position:absolute;top:0;left:24px;right:24px;height:2px;background:linear-gradient(90deg,transparent,#F0A500,transparent);border-radius:2px"></div>
+      <div style="margin-bottom:16px">
+        <label style="color:#7A9CC0;font-size:.73rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:7px">${T.teamNameLabel}</label>
+        <input id="inp-team" class="inp" placeholder="${T.teamNamePh}" oninput="">
+      </div>
+      <div style="margin-bottom:22px">
+        <label style="color:#7A9CC0;font-size:.73rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:7px">${T.passLabel}</label>
+        <input id="inp-pass" class="inp" type="password" placeholder="${T.passPh}" onkeydown="if(event.key==='Enter')tryJoin()">
+      </div>
+      <div id="entry-err"></div>
+      <button class="red-btn" onclick="tryJoin()">${T.joinBtn}</button>
+      <div style="margin-top:22px;border-top:1px solid #1E3354;padding-top:18px">
+        <div id="admin-section"><button class="ghost-btn" onclick="showAdminField()">${T.commAccess}</button></div>
+      </div>
+    </div>
+    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:.74rem;position:relative;z-index:1;max-width:480px;width:100%">
+      <span style="color:#3A5A80">${T.score0}: <b>0 ${T.pts}</b></span>
+      <span style="color:#E8EDF5">${T.score3}: <b style="color:#3E94D4">3 ${T.pts}</b></span>
+      <span style="color:#E8EDF5">${T.score4}: <b style="color:#FFD04A">4 ${T.pts}</b></span>
+      <span style="color:#E8EDF5">${T.score6win}: <b style="color:#F0A500">6 ${T.pts}</b></span>
+      <span style="color:#E8EDF5">${T.score6draw}: <b style="color:#F0A500">6 ${T.pts}</b></span>
+      <span style="color:#E8EDF5">${T.score10}: <b style="color:#5de890">10 ${T.pts}</b></span>
+    </div>
+    <div style="margin-top:16px;background:#0F2847;border:1px solid #1A3560;border-radius:8px;padding:12px 16px;max-width:480px;width:100%;position:relative;z-index:1">
+      <div style="color:#F0A500;font-size:.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;margin-bottom:9px">${T.mulTitle}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px 12px;font-size:.76rem">
+        <span style="color:#E8EDF5">${T.mulGroup}: <b style="color:#F0A500">x5</b></span>
+        <span style="color:#E8EDF5">${T.mulR32}: <b style="color:#F0A500">x6</b></span>
+        <span style="color:#E8EDF5">${T.mulR16}: <b style="color:#F0A500">x7</b></span>
+        <span style="color:#E8EDF5">${T.mulQF}: <b style="color:#FFD04A">x8</b></span>
+        <span style="color:#E8EDF5">${T.mulSF}: <b style="color:#FFD04A">x9</b></span>
+        <span style="color:#E8EDF5">${T.mulF}: <b style="color:#5de890">x10</b></span>
+      </div>
+    </div>
+  </div>`;
+  startTimers();
+}
+
+function renderParticipant(app,T){
+  const myPicks=STATE.allPicks[STATE.teamName]||{};
+  const myTotal=totalPts(myPicks);
+  const board=leaderboard();
+  const rank=board.findIndex(e=>e.tm===STATE.teamName)+1;
+  const fm=STATE.matches.filter(m=>{
+    if(STATE.filter==="all")return true;
+    if(STATE.filter==="upcoming")return!STATE.results[m.id]&&!isLocked(m.kickoffISO);
+    if(STATE.filter==="locked")return isLocked(m.kickoffISO)&&!STATE.results[m.id];
+    return!!STATE.results[m.id];
+  });
+
+  const tabsHTML=`<div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="tab-btn ${STATE.tab==='picks'?'active':'inactive'}" onclick="setTab('picks')">${T.myPicks}</button>
+    <button class="tab-btn ${STATE.tab==='leaderboard'?'active':'inactive'}" onclick="setTab('leaderboard')">${T.leaderboard}</button>
+  </div>`;
+
+  let content="";
+  if(STATE.tab==="picks"){
+    const filtersHTML=`<div style="display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap">
+      ${[["upcoming",T.open],["locked",T.locked],["completed",T.final],["all",T.all]].map(([k,l])=>`<button class="filter-btn ${STATE.filter===k?'active':'inactive'}" onclick="setFilter('${k}')">${l}</button>`).join("")}
+    </div>`;
+    const cards=fm.length===0?`<p style="color:#3A5A80;font-style:italic">${T.noMatches}</p>`:
+      fm.map(m=>matchCardHTML(m,myPicks[m.id],STATE.results[m.id],STATE.weather[m.id],STATE.lang,false)).join("");
+    content=filtersHTML+cards;
+  } else {
+    const rows=board.length===0?`<p style="color:#3A5A80">${T.noPicks}</p>`:board.map((e,i)=>{
+      const isMe=e.tm===STATE.teamName;
+      return `<div style="background:${isMe?"linear-gradient(135deg,#142e14,#0D2040)":"linear-gradient(135deg,#0F2847,#0D2040)"};border:1px solid ${isMe?"#2a4a2a":"#1A3560"};border-radius:10px;padding:13px 18px;margin-bottom:7px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden">
+        ${isMe?`<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(#F0A500,#5de890)"></div>`:""}
+        <span style="color:${i===0?"#F0A500":i===1?"#bbb":i===2?"#cd7f32":"#3A5A80"};font-family:'Barlow Condensed',sans-serif;font-weight:700;width:32px;text-align:center">${i===0?"1st":i===1?"2nd":i===2?"3rd":"#"+(i+1)}</span>
+        <div style="flex:1"><div style="color:#E8EDF5;font-weight:600;font-size:.9rem">${e.tm}${isMe?`<span style="color:#5de890;font-size:.67rem;margin-left:6px;background:#0e2a14;padding:1px 6px;border-radius:3px">${T.you}</span>`:""}</div><div style="color:#3A5A80;font-size:.7rem">${e.n} ${T.picks}</div></div>
+        <div style="font-family:monospace;font-size:1.15rem;font-weight:700;color:#F0A500">${e.pts} ${T.pts}</div>
+      </div>`;
+    }).join("");
+    content=`<div class="section-title">${T.standings}</div>`+rows;
+  }
+
+  app.innerHTML=`
+  <div style="min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#142e5e 0%,#0B1F3A 40%,#060E1F 100%);padding-bottom:60px">
+    <div class="nav">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="nav-title" style="color:#F0A500">WC PICK'EM</span>
+        <span class="nav-title" style="color:#fff">2026</span>
+        ${langSwitch()}
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="text-align:right"><div style="color:#F0A500;font-weight:700;font-family:monospace;font-size:1.05rem">${myTotal} ${T.pts}</div><div style="color:#3A5A80;font-size:.67rem">${T.rank} #${rank} / ${board.length}</div></div>
+        <button onclick="logout()" style="background:transparent;border:1px solid #1E3354;color:#3A5A80;border-radius:6px;padding:5px 12px;font-size:.75rem">${T.logout}</button>
+      </div>
+    </div>
+    <div style="max-width:720px;margin:0 auto;padding:20px 12px;position:relative;z-index:1">
+      ${tabsHTML}${content}
+    </div>
+  </div>`;
+  startTimers();
+}
+
+function renderAdmin(app,T){
+  const board=leaderboard();
+  const mb=matchById();
+
+  const tabsHTML=`<div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="tab-btn ${STATE.adminTab==='results'?'active':'inactive'}" onclick="setAdminTab('results')">${T.results}</button>
+    <button class="tab-btn ${STATE.adminTab==='picks'?'active':'inactive'}" onclick="setAdminTab('picks')">${T.allPicks}</button>
+    <button class="tab-btn ${STATE.adminTab==='leaderboard'?'active':'inactive'}" onclick="setAdminTab('leaderboard')">${T.leaderboard}</button>
+  </div>`;
+
+  let content="";
+  if(STATE.adminTab==="results"){
+    content=`<div class="section-title">${T.matchResults}</div>`+
+      STATE.matches.map(m=>matchCardHTML(m,null,STATE.results[m.id],STATE.weather[m.id],STATE.lang,true)).join("");
+  } else if(STATE.adminTab==="picks"){
+    content=`<div class="section-title">${T.allPicksTitle}</div>`+(board.length===0?`<p style="color:#3A5A80">${T.noPicks}</p>`:
+      board.map(e=>`<div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+          <span style="color:#E8EDF5;font-weight:600;font-size:.9rem">${e.tm}</span>
+          <span style="color:#F0A500;font-family:monospace;font-weight:700;font-size:.88rem">${e.pts} ${T.pts} · ${e.n} ${T.picks}</span>
+        </div>
+        ${STATE.matches.map(m=>{
+          const p=STATE.allPicks[e.tm]?.[m.id];const r=STATE.results[m.id];const pts=p&&r?calcPts(p,r,m.group):null;
+          return `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #1E3354;padding:4px 0">
+            <span style="color:#3A5A80;font-size:.77rem">${flagImg(m.homeCode,true)} ${m.home} vs ${m.away} ${flagImg(m.awayCode,true)}</span>
+            ${p?`<div style="display:flex;gap:7px;align-items:center"><span style="color:#7A9CC0;font-family:monospace;font-size:.82rem">${p.homeScore}–${p.awayScore}</span>${pts!==null?ptsBadge(pts):""}</div>`:`<span style="color:#1E3354;font-size:.77rem">—</span>`}
+          </div>`;
+        }).join("")}
+      </div>`).join(""));
+  } else {
+    content=`<div class="section-title">${T.leaderboardTitle}</div>`+(board.map((e,i)=>`
+      <div style="background:linear-gradient(135deg,#0F2847,#0D2040);border:1px solid #1A3560;border-radius:10px;padding:13px 18px;margin-bottom:7px;display:flex;align-items:center;gap:14px">
+        <span style="color:${i===0?"#F0A500":i===1?"#bbb":i===2?"#cd7f32":"#3A5A80"};font-family:'Barlow Condensed',sans-serif;font-weight:700;width:32px;text-align:center">${i===0?"1st":i===1?"2nd":i===2?"3rd":"#"+(i+1)}</span>
+        <div style="flex:1"><div style="color:#E8EDF5;font-weight:600;font-size:.9rem">${e.tm}</div><div style="color:#3A5A80;font-size:.7rem">${e.n} ${T.picks}</div></div>
+        <div style="font-family:monospace;font-size:1.15rem;font-weight:700;color:#F0A500">${e.pts} ${T.pts}</div>
+      </div>`).join("") || `<p style="color:#3A5A80">${T.noPicks}</p>`);
+  }
+
+  app.innerHTML=`
+  <div style="min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#142e5e 0%,#0B1F3A 40%,#060E1F 100%);padding-bottom:60px">
+    <div class="nav">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="nav-title" style="color:#F0A500">WC PICK'EM</span>
+        <span class="nav-title" style="color:#fff">2026</span>
+        <span style="background:#C8102E;color:#fff;font-size:.62rem;font-weight:700;border-radius:3px;padding:2px 7px;letter-spacing:1px">${T.commissioner}</span>
+        ${langSwitch()}
+      </div>
+      <div style="display:flex;gap:7px">
+        <button onclick="refreshData()" style="background:#1E3354;color:#F0A500;border:1px solid #1A3560;border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600" ${STATE.dataLoading?"disabled":""}>
+          <span style="display:inline-block;animation:${STATE.dataLoading?"spin 1s linear infinite":"none"}">↻</span> ${STATE.dataLoading?T.loading:T.refresh}
+        </button>
+        <button onclick="logout()" style="background:transparent;border:1px solid #1E3354;color:#3A5A80;border-radius:6px;padding:5px 12px;font-size:.75rem">${T.logout}</button>
+      </div>
+    </div>
+    ${STATE.dataError?`<div style="background:#1a0812;border:1px solid #C8102E44;border-radius:8px;margin:12px 16px 0;padding:8px 14px;color:#ff9090;font-size:.78rem">${STATE.dataError}</div>`:""}
+    <div style="max-width:900px;margin:0 auto;padding:20px 12px;position:relative;z-index:1">
+      ${tabsHTML}${content}
+    </div>
+  </div>`;
+  startTimers();
+}
+
+function renderApiConfig(app,T){
+  app.innerHTML=`
+  <div style="min-height:100vh;background:radial-gradient(ellipse at 30% 0%,#142e5e,#060E1F);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="position:fixed;top:14px;right:18px;z-index:200">${langSwitch()}</div>
+    <div style="background:#0D2040;border:1px solid #1A3560;border-radius:16px;padding:32px;width:100%;max-width:480px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#F0A500;letter-spacing:4px;margin-bottom:4px">${T.apiConfig}</div>
+      <p style="color:#7A9CC0;font-size:.83rem;margin-bottom:24px">${T.apiTagline}</p>
+      <div style="background:#0c2010;border:1px solid #1a4020;border-radius:8px;padding:10px 14px;margin-bottom:22px">
+        <div style="color:#5de890;font-size:.78rem">${T.weatherNote}</div>
+      </div>
+      <button class="gold-btn" onclick="refreshData();STATE.showApiConfig=false;render()" style="margin-bottom:10px">${T.saveLoad}</button>
+      <button class="ghost-btn" onclick="STATE.showApiConfig=false;render()">${T.skipSample}</button>
+    </div>
+  </div>`;
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+function toggleLang(){STATE.lang=STATE.lang==="en"?"pt":"en";store.set("wc-lang",STATE.lang);render();}
+
+function tryJoin(){
+  const team=document.getElementById("inp-team")?.value?.trim();
+  const code=document.getElementById("inp-pass")?.value?.trim().toUpperCase();
+  const err=document.getElementById("entry-err");
+  const T=t();
+  if(code!==PASS){err.innerHTML=`<div class="err">${T.incorrectPass}</div>`;return;}
+  if(!team){err.innerHTML=`<div class="err">${T.enterTeam}</div>`;return;}
+  STATE.teamName=team;STATE.view="participant";STATE.tab="picks";STATE.filter="upcoming";render();
+}
+
+function showAdminField(){
+  document.getElementById("admin-section").innerHTML=`
+    <input id="inp-admin" class="inp" type="password" placeholder="${t().adminPh}" style="margin-bottom:8px" onkeydown="if(event.key==='Enter')tryAdmin()">
+    <button class="ghost-btn" style="background:#1E3354;color:#F0A500;border-color:#F0A50044;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:1px" onclick="tryAdmin()">${t().enterAdmin}</button>`;
+}
+
+function tryAdmin(){
+  const code=document.getElementById("inp-admin")?.value?.trim().toUpperCase();
+  const T=t();
+  if(code!==ADMIN_PASS){document.getElementById("entry-err").innerHTML=`<div class="err">${T.wrongAdmin}</div>`;return;}
+  STATE.view="admin";STATE.adminTab="results";render();
+}
+
+function logout(){STATE.view="entry";STATE.teamName="";render();}
+function setTab(tab){STATE.tab=tab;render();}
+function setFilter(f){STATE.filter=f;render();}
+function setAdminTab(tab){STATE.adminTab=tab;render();}
+
+function updatePick(mid){
+  const hs=document.getElementById("hs-"+mid)?.value;
+  const as=document.getElementById("as-"+mid)?.value;
+  const btn=document.getElementById("lock-"+mid);
+  if(btn){
+    const ok=hs!==""&&as!=="";
+    btn.style.background=ok?"linear-gradient(135deg,#C8102E,#9A0C23)":"#1E3354";
+    btn.style.color=ok?"#fff":"#3A5A80";
+    btn.style.opacity=ok?"1":"0.4";
+  }
+}
+
+function lockPick(mid){
+  const hs=document.getElementById("hs-"+mid)?.value;
+  const as=document.getElementById("as-"+mid)?.value;
+  if(hs===""||as==="")return;
+  const pick={homeScore:parseInt(hs),awayScore:parseInt(as)};
+  if(!STATE.allPicks[STATE.teamName])STATE.allPicks[STATE.teamName]={};
+  STATE.allPicks[STATE.teamName][mid]=pick;
+  store.set("wc-picks",STATE.allPicks);
+  const btn=document.getElementById("lock-"+mid);
+  if(btn){btn.textContent=t().saved;btn.style.background="#1a4a20";btn.style.color="#5de890";setTimeout(()=>{btn.textContent=t().update;btn.style.background="linear-gradient(135deg,#C8102E,#9A0C23)";btn.style.color="#fff";},2000);}
+}
+
+function saveResult(mid){
+  const hInput=document.querySelector(`input[data-mid="${mid}"][data-side="home"]`);
+  const aInput=document.querySelector(`input[data-mid="${mid}"][data-side="away"]`);
+  if(!hInput||!aInput)return;
+  STATE.results[mid]={homeScore:parseInt(hInput.value),awayScore:parseInt(aInput.value)};
+  store.set("wc-results",STATE.results);
+  render();
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+(async()=>{
+  const[r,p,w,m,l]=await Promise.all([store.get("wc-results"),store.get("wc-picks"),store.get("wc-weather"),store.get("wc-matches"),store.get("wc-lang")]);
+  if(r)STATE.results=r;
+  if(p)STATE.allPicks=p;
+  if(w)STATE.weather=w;
+  if(m)STATE.matches=m;
+  if(l)STATE.lang=l;
+  STATE.loading=false;
+  render();
+  refreshData();
+})();
+</script>
 </body>
 </html>
