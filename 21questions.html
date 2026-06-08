@@ -497,26 +497,20 @@ async function processQuestion(question){
   const ph=addQA(question,'','thinking');
   try{
     const ctx=G.questions.map((q,i)=>`Q${i+1}: ${q.q} → ${q.a}`).join('\n');
-    const d=await callAI(
-      `You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
-CRITICAL RULES:
-- Answer ONLY "yes" or "no" based on REAL, VERIFIED facts about this specific animal.
-- The explanation field MUST always be empty string "". Never add any text.
-- Do NOT confuse this animal with similar animals.
-- HABITAT: Answer based on where this animal actually EXISTS TODAY in the wild OR as a domesticated species worldwide. For domesticated animals like cows, horses, dogs, cats, sheep, pigs, chickens — they live on EVERY inhabited continent, so answer YES to any continent question except Antarctica.
-- PETS: Answer "yes" ONLY if it is genuinely common and widespread for people to keep this animal as a pet. One-off exotic cases do NOT count.
-- Answer based on the species generally, not rare edge cases.
-- SELF-CHECK: Before finalizing your answer, ask yourself: "Am I 100% sure this is factually correct for ${G.animal.name}?" If there is any doubt, answer "no".`,
-      `Secret animal: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}
-Question: "${question}"
-
-Step 1 - Draft your answer (yes/no) for ${G.animal.name}.
-Step 2 - Verify: Is this definitely true for ${G.animal.name} specifically? Would a wildlife expert agree?
-Step 3 - If verified correct, return yes. If any doubt, return no.
-
-Respond ONLY with this exact JSON (explanation always empty): {"answer":"yes","explanation":"","type":"yes"}`
-      `Secret animal: "${G.animal.name}".\n${ctx?'Previous:\n'+ctx+'\n':''}Question: "${question}"\nThink carefully about whether this is factually true for ${G.animal.name} before answering.\nRespond ONLY with this exact JSON: {"answer":"yes","explanation":"","type":"yes"}`
-    );
+    let d=null, lastErr=null;
+    const sysPrompt=`You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
+RULES:
+- Answer ONLY "yes" or "no". Explanation always empty "".
+- Base answers on verified facts only. If unsure, say "no".
+- HABITAT: Use where the animal lives TODAY. Domesticated animals (cow, horse, dog, cat, sheep, pig, chicken) live on every continent except Antarctica — answer YES to any continent.
+- PETS: Only "yes" if genuinely common worldwide (dogs, cats, hamsters). Not exotic/rare cases.
+- Natural habitat only — zoos don't count.`;
+    const usrPrompt=`Animal: "${G.animal.name}". Question: "${question}"\n${ctx?'Context:\n'+ctx+'\n':''}Respond ONLY: {"answer":"yes","explanation":"","type":"yes"}`;
+    for(let attempt=0;attempt<3;attempt++){
+      try{ d=await callAI(sysPrompt,usrPrompt); break; }
+      catch(err){ lastErr=err; await new Promise(r=>setTimeout(r,700)); }
+    }
+    if(!d) throw lastErr||new Error('Failed after retries');
     document.getElementById('qa-log').removeChild(ph);
     const type=d.type||(d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
     G.questions.push({q:question,a:d.answer,explanation:d.explanation||'',type});
