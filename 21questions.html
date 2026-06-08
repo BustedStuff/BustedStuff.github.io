@@ -336,7 +336,7 @@ if (AI_ENABLED) document.getElementById('mode-indicator').className = 'mode-badg
 })();
 
 async function callAI(sys,usr,max=600) {
-  const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:max,system:sys,messages:[{role:'user',content:usr}]})});
+  const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:max,system:sys,messages:[{role:'user',content:usr}]})});
   if(!res.ok){
     const errText=await res.text().catch(()=>'');
     throw new Error(`Worker ${res.status}: ${errText}`);
@@ -506,10 +506,11 @@ async function processQuestion(question){
     const sysPrompt=`You are the game master for a 21 Questions animal guessing game. The secret animal is: "${G.animal.name}" (${G.animal.scientific_name||''}).
 RULES:
 - Answer ONLY "yes" or "no". Explanation always empty "".
-- Base answers on verified facts only. If unsure, say "no".
-- HABITAT: Use where the animal lives TODAY. Domesticated animals (cow, horse, dog, cat, sheep, pig, chicken) live on every continent except Antarctica — answer YES to any continent.
-- PETS: Only "yes" if genuinely common worldwide (dogs, cats, hamsters). Not exotic/rare cases.
-- Natural habitat only — zoos don't count.`;
+- Base answers ONLY on verified biological facts about ${G.animal.name}. Never confuse it with another animal.
+- A Pig is NOT a bear. A Kangaroo does NOT have spikes. Always answer for THIS specific animal.
+- If the question asks "Is it a [different animal]?" and the secret animal is NOT that animal, answer "no".
+- HABITAT: Domesticated animals (cow, horse, dog, cat, sheep, pig, chicken) live on every continent except Antarctica.
+- PETS: Only "yes" if genuinely common worldwide. Natural habitat only — zoos don't count.`;
     const usrPrompt=`Animal: "${G.animal.name}". Question: "${question}"\n${ctx?'Context:\n'+ctx+'\n':''}Respond ONLY: {"answer":"yes","explanation":"","type":"yes"}`;
     for(let attempt=0;attempt<3;attempt++){
       try{ d=await callAI(sysPrompt,usrPrompt); break; }
