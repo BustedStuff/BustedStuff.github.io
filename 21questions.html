@@ -25,7 +25,8 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
 .header { background: rgba(10,10,8,.82); backdrop-filter: blur(12px); border-bottom: 2px solid rgba(255,255,255,.08); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
 .logo { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
 .logo span { color: #fde68a; }
-.mode-badge { font-size: 12px; padding: 4px 12px; border-radius: 999px; font-weight: 700; background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+.tts-toggle { font-size: 12px; padding: 4px 12px; border-radius: 999px; font-weight: 700; background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); cursor: pointer; transition: all .15s; }
+.tts-toggle.on { background: rgba(34,197,94,.3); border-color: rgba(34,197,94,.5); }
 .mode-badge.ai { background: rgba(34,197,94,.3); border-color: rgba(34,197,94,.5); }
 .main { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
 .card { background: rgba(255,255,255,.93); backdrop-filter: blur(8px); border: 2px solid rgba(255,255,255,.5); border-radius: 24px; padding: 22px; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
@@ -158,6 +159,7 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
     <div style="font-size:11px;color:rgba(255,255,255,.6);font-weight:700;margin-top:2px;">Animal Kingdom Edition</div>
   </div>
   <span id="mode-indicator" class="mode-badge">Classic</span>
+  <button id="tts-toggle" class="tts-toggle" onclick="toggleTTS()">🔇 Host Off</button>
 </div>
 <div class="main">
   <div class="tabs">
@@ -445,7 +447,60 @@ const HOST_LINES = {
   ],
 };
 
-function pickLine(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+// ── TEXT TO SPEECH ────────────────────────────────────────────────────────────
+let ttsEnabled = localStorage.getItem('21q-tts') !== 'off';
+let ttsVoice = null;
+
+function initTTS() {
+  if (!window.speechSynthesis) return;
+  const setVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer a friendly English voice
+    ttsVoice = voices.find(v => v.name.includes('Samantha')) ||
+               voices.find(v => v.name.includes('Google US English')) ||
+               voices.find(v => v.lang === 'en-US' && !v.name.includes('Compact')) ||
+               voices.find(v => v.lang.startsWith('en')) ||
+               voices[0] || null;
+  };
+  setVoice();
+  window.speechSynthesis.onvoiceschanged = setVoice;
+}
+
+function speak(text) {
+  if (!ttsEnabled || !window.speechSynthesis) return;
+  // Strip emojis for cleaner speech
+  const clean = text.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').replace(/[🎙️🔍🎯👀🌍❌🤔🔄🕵️💪⛏️🙈🎲🌡️🧐⏰⏱️🤞🐾🔮🎉]/g, '').trim();
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(clean);
+  if (ttsVoice) utt.voice = ttsVoice;
+  utt.rate = 1.05;
+  utt.pitch = 1.1;
+  utt.volume = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  localStorage.setItem('21q-tts', ttsEnabled ? 'on' : 'off');
+  const btn = document.getElementById('tts-toggle');
+  btn.textContent = ttsEnabled ? '🔊 Host On' : '🔇 Host Off';
+  btn.classList.toggle('on', ttsEnabled);
+  if (!ttsEnabled) window.speechSynthesis?.cancel();
+  else speak('Host audio is on! Let\'s play!');
+}
+
+// Init TTS on load
+initTTS();
+// Set initial button state
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('tts-toggle');
+  if (btn) {
+    btn.textContent = ttsEnabled ? '🔊 Host On' : '🔇 Host Off';
+    btn.classList.toggle('on', ttsEnabled);
+  }
+});
+// Also set immediately in case DOMContentLoaded already fired
+(()=>{ const btn=document.getElementById('tts-toggle'); if(btn){btn.textContent=ttsEnabled?'🔊 Host On':'🔇 Host Off';btn.classList.toggle('on',ttsEnabled);} })();
 
 function showHost(text, thinking=false){
   const bubble=document.getElementById('host-bubble');
@@ -454,10 +509,10 @@ function showHost(text, thinking=false){
   hostText.textContent=text;
   bubble.classList.remove('hidden','thinking');
   if(thinking)bubble.classList.add('thinking');
-  // Re-trigger animation
   bubble.style.animation='none';
   bubble.offsetHeight;
   bubble.style.animation='';
+  speak(text);
 }
 
 function hideHost(){
