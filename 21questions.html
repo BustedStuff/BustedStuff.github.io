@@ -688,30 +688,24 @@ async function startGame(){
   const allExcluded = [...new Set([...hardBan, ...recentAnimals])];
   const exclude = `\nCRITICAL: You MUST NOT pick any of these animals under any circumstances: ${allExcluded.join(', ')}. Pick something completely different.`;
   const seed='ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random()*26)]+Math.floor(Math.random()*1000);
-  let animal=null;
+  // Pick from static pool immediately so game never spins
+  const keys=[...new Set(cats.map(c=>c==='sky'?'land':c==='fresh'?'ocean':c))];
+  const pool=[...new Set(keys.flatMap(k=>STATIC[diff][k]||[]))].filter(n=>!allExcluded.map(r=>r.toLowerCase()).includes(n.toLowerCase()));
+  const src=pool.length>0?pool:keys.flatMap(k=>STATIC[diff][k]||[]);
+  const staticName=src[Math.floor(Math.random()*src.length)];
+  let animal={name:staticName,scientific_name:'',habitat:cats.includes('ocean')?'ocean':'land',fun_fact:'',wiki:staticName.replace(/ /g,'_'),category:cats.includes('ocean')?'ocean':'land'};
+
+  // Race: try AI pick with a hard 8-second deadline
   try{
-    const d=await callAI(
-      `You run a 21 Questions animal game. Pick a RANDOM, UNPREDICTABLE real animal. Random seed: ${seed}.${exclude}`,
-      `Pick one animal.\n- Habitat: ${catDesc}\n- Difficulty: ${diffDesc}\n- Real living species, be specific\n- Seed ${seed} guides your pick toward variety\n- BANNED animals (do not pick these): ${allExcluded.join(', ')}\n\nRespond ONLY:\n{"name":"Common Name","scientific_name":"Scientific name","habitat":"brief habitat","fun_fact":"one fact","wiki":"Wikipedia_title","category":"ocean OR land"}`
-    );
-    if(d.name)animal=d;
-  }catch(e){console.warn('AI pick failed:',e);}
-
-  if(!animal){
-    const keys=[...new Set(cats.map(c=>c==='sky'?'land':c==='fresh'?'ocean':c))];
-    const pool=[...new Set(keys.flatMap(k=>STATIC[diff][k]||[]))].filter(n=>!allExcluded.map(r=>r.toLowerCase()).includes(n.toLowerCase()));
-    const src=pool.length>0?pool:keys.flatMap(k=>STATIC[diff][k]||[]);
-    const name=src[Math.floor(Math.random()*src.length)];
-    animal={name,scientific_name:'',habitat:cats.includes('ocean')?'ocean':'land',fun_fact:'',wiki:name.replace(/ /g,'_'),category:cats.includes('ocean')?'ocean':'land'};
-  }
-
-  if(!animal){
-    // Total fallback — should never happen but just in case
-    hideAll();show('panel-setup');
-    document.getElementById('start-btn').disabled=false;
-    document.getElementById('diff-hint').textContent='Could not connect — please try again.';
-    return;
-  }
+    const aiPick = await Promise.race([
+      callAI(
+        `You run a 21 Questions animal game. Pick a RANDOM, UNPREDICTABLE real animal. Random seed: ${seed}.${exclude}`,
+        `Pick one animal.\n- Habitat: ${catDesc}\n- Difficulty: ${diffDesc}\n- Real living species, be specific\n- BANNED: ${allExcluded.join(', ')}\n\nRespond ONLY:\n{"name":"Common Name","scientific_name":"Scientific name","habitat":"brief habitat","fun_fact":"one fact","wiki":"Wikipedia_title","category":"ocean OR land"}`
+      ),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),8000))
+    ]);
+    if(aiPick&&aiPick.name) animal=aiPick;
+  }catch(e){console.warn('AI pick skipped, using static fallback:',e.message);}
 
   recentAnimals.unshift(animal.name);
   if(recentAnimals.length>MAX_RECENT)recentAnimals.pop();
