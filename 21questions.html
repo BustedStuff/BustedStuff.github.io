@@ -76,7 +76,10 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
 .unified-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 .unified-btn.guess-mode { background: linear-gradient(135deg, #ff6b35, #f59e0b); }
 .input-hint { font-size: 12px; color: var(--text3); font-weight: 700; text-align: center; margin-top: 6px; margin-bottom: 2px; height: 18px; }
-.qa-log { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+.host-bubble { display: flex; align-items: flex-start; gap: 10px; margin: 8px 0 4px; animation: slide-up .3s ease both; }
+.host-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(99,102,241,.4); }
+.host-text { background: linear-gradient(135deg, #ede9fe, #f5f3ff); border: 2px solid #c4b5fd; border-radius: 14px 14px 14px 4px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: #5b21b6; line-height: 1.4; max-width: 85%; }
+.host-bubble.thinking .host-text { background: var(--blue-bg); border-color: var(--blue-border); color: #1d4ed8; }
 .qa-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; margin-bottom: 4px; min-height: 28px; }
 .qa-toolbar-label { font-size: 12px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
 .qa-sort-toggle { display: flex; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; }
@@ -205,6 +208,10 @@ body { background: #1c1a14; color: var(--text); font-family: 'Nunito', sans-seri
         </button>
       </div>
       <div class="input-hint" id="input-hint">Type a yes/no question <em>or</em> your guess for the animal</div>
+      <div class="host-bubble hidden" id="host-bubble">
+        <div class="host-avatar">🎙️</div>
+        <div class="host-text" id="host-text"></div>
+      </div>
       <div class="qa-toolbar" id="qa-toolbar" style="display:none;">
         <span class="qa-toolbar-label" id="qa-count"></span>
         <div class="qa-sort-toggle">
@@ -388,8 +395,73 @@ const STATIC={
   }
 };
 
-const MAX_Q=21;
-let G=null,leaderboard=[],asking=false,selectedDiff='easy';
+const HOST_LINES = {
+  yes: [
+    "Ooh, YES! That narrows it down nicely! 🔍",
+    "Correct! You're on the right track...",
+    "Yes! Now we're getting somewhere! 🎯",
+    "That's a YES! Sharp thinking!",
+    "Bingo! One step closer... 👀",
+    "YES! The animal kingdom is shrinking! 🌍",
+    "Good instinct! That's definitely true!",
+  ],
+  no: [
+    "Nope! Cross that one off the list. ❌",
+    "Not a chance! Try a different angle.",
+    "No way! Think bigger... or smaller? 🤔",
+    "Afraid not! Keep those questions coming.",
+    "Nah! You'll get there though.",
+    "Wrong track! Pivot and try again. 🔄",
+    "Definitely not! The mystery deepens... 🕵️",
+  ],
+  maybe: [
+    "Hmm, it's complicated... sometimes yes, sometimes no! 🤷",
+    "That's a tricky one — not quite yes, not quite no!",
+    "Sort of! It depends on the situation...",
+  ],
+  wrong_guess: [
+    "Not quite! But you're asking good questions! 💪",
+    "Swing and a miss! Keep digging. ⛏️",
+    "Nope! The animal is still hiding... 🙈",
+    "Good try but no! What else do you know?",
+    "Not this time! Don't give up! 🎲",
+  ],
+  category_guess: [
+    "Warm! But you need to be more specific! 🌡️",
+    "You're in the right family — get more specific!",
+    "Close! What KIND exactly? 🧐",
+  ],
+  last5: [
+    "Only 5 turns left — time to make your move! ⏰",
+    "Tick tock! The clock is running out! ⏱️",
+    "5 turns! Do you know what it is yet? 🤞",
+  ],
+  opening: [
+    "Welcome! I've picked a mystery animal — can you figure it out? 🐾",
+    "A new animal awaits! Ask wisely... 🎙️",
+    "The game is on! 21 questions, one mystery animal. Go! 🔮",
+  ],
+};
+
+function pickLine(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function showHost(text, thinking=false){
+  const bubble=document.getElementById('host-bubble');
+  const hostText=document.getElementById('host-text');
+  if(!bubble||!hostText)return;
+  hostText.textContent=text;
+  bubble.classList.remove('hidden','thinking');
+  if(thinking)bubble.classList.add('thinking');
+  // Re-trigger animation
+  bubble.style.animation='none';
+  bubble.offsetHeight;
+  bubble.style.animation='';
+}
+
+function hideHost(){
+  const bubble=document.getElementById('host-bubble');
+  if(bubble)bubble.classList.add('hidden');
+}
 let selectedCats=new Set(['land','sky','ocean','fresh']);
 let recentAnimals=JSON.parse(localStorage.getItem('21q-recent')||'[]');
 const MAX_RECENT=8;
@@ -521,6 +593,11 @@ RULES:
     const type=d.type||(d.answer==='yes'?'yes':d.answer==='no'?'no':'maybe');
     G.questions.push({q:question,a:d.answer,explanation:d.explanation||'',type});
     addQA(question,d.explanation||'',type);renderSuggestions();
+    // Host narration
+    if(G.qUsed>=17) showHost(pickLine(HOST_LINES.last5));
+    else if(type==='yes') showHost(pickLine(HOST_LINES.yes));
+    else if(type==='no') showHost(pickLine(HOST_LINES.no));
+    else showHost(pickLine(HOST_LINES.maybe));
     // If AI said YES and question names the animal specifically enough, trigger win
     if(type==='yes'){
       const ql=question.toLowerCase();
@@ -550,17 +627,21 @@ async function processGuess(guess){
   const ph=addQA(`🎯 Guess: "${guess}"`, '', 'thinking');
   try{
     const an=G.animal.name.toLowerCase().trim(),gn=guess.toLowerCase().trim();
-    // Only consider it correct if it's a very close match — not just a category word
-    const exactMatch=an===gn;
-    const strongPartial=gn.length>=5&&(an.includes(gn)||gn.includes(an));
+    // Clean up common guess phrasings before matching
+    const gnClean=gn
+      .replace(/^(a |an |the )/,'')
+      .replace(/^(type of |kind of |species of |some kind of )/,'')
+      .trim();
+    const exactMatch=an===gn||an===gnClean;
+    const strongPartial=(gnClean.length>=4&&(an.includes(gnClean)||gnClean.includes(an)));
     let correct=exactMatch||strongPartial;
     // Always use AI to verify — it will reject category-only guesses like "bear" for "Grizzly Bear"
     try{
       const c=await callAI(
         `You are judging a guess in a 21 Questions animal game. The secret animal is "${G.animal.name}".`,
-        `Player guessed: "${guess}".
-Rule: Only mark correct if the guess names THIS SPECIFIC animal or a clear alternate name for it.
-If the guess is only a general category (e.g. "bear" when answer is "Grizzly Bear", "cat" when answer is "Cheetah"), mark it INCORRECT — the player must be more specific.
+        `Animal: "${G.animal.name}". Guess: "${guess}".
+Mark CORRECT if: exact match, alternate name, clearly the same species, or a "type of X" phrase where X is the animal (e.g. "type of shark" is correct if animal is "Shark").
+Mark INCORRECT if: only a broad category without naming the animal (e.g. "fish" for "Shark").
 Respond ONLY: {"correct":true} or {"correct":false}`
       );
       correct=c.correct===true;
@@ -569,6 +650,7 @@ Respond ONLY: {"correct":true} or {"correct":false}`
     if(correct){
       G.questions.push({q:`🎯 Guess: "${guess}"`,a:'Correct!',explanation:"Yes! That's right!",type:'yes'});
       addQA(`🎯 Guess: "${guess}"`,"Yes! That's right!",'yes');
+      showHost("🎉 CORRECT!! Amazing job — you got it!!");
       asking=false;input.disabled=false;btn.disabled=false;
       setTimeout(()=>endGame(true),600);
       return;
@@ -579,6 +661,7 @@ Respond ONLY: {"correct":true} or {"correct":false}`
       const msg=isCategory?`Yes, but what kind of ${guess}? Be more specific!`:'Not quite — keep asking questions!';
       G.questions.push({q:`🎯 Guess: "${guess}"`,a:'Not quite!',explanation:msg,type:'no'});
       addQA(`🎯 Guess: "${guess}"`,msg,'no');
+      showHost(isCategory ? pickLine(HOST_LINES.category_guess) : pickLine(HOST_LINES.wrong_guess));
       if(G.qUsed>=MAX_Q)setTimeout(()=>endGame(false),800);
     }
   }catch(e){
@@ -595,9 +678,9 @@ async function startGame(){
   const cats=['land','sky','ocean','fresh'].filter(c=>selectedCats.has(c));
   const catDesc=cats.length===4?'any habitat':'these habitats only: '+cats.map(c=>({land:'land',sky:'sky',ocean:'ocean',fresh:'freshwater'}[c])).join(', ');
   const diffDesc={
-    easy:'a very common, widely recognized animal that any young child would know by its general name — think dog, cat, horse, cow, sheep, pig, chicken, duck, frog, shark, eagle, bear, lion, tiger, elephant, giraffe, zebra, dolphin, whale, turtle, snake, rabbit, deer, chipmunk, squirrel, crow, owl. Do NOT pick specific subspecies or regional variants — just the common everyday name.',
-    medium:'a real animal that most adults would recognize but that requires some knowledge to identify — examples: grizzly bear, brown bear, koala, blue whale, killer whale, humpback whale, bald eagle, great white shark, hammerhead shark, komodo dragon, flamingo, gorilla, chimpanzee, polar bear, wolverine, moose, bison, peacock, toucan, porcupine, armadillo, crocodile, alligator. Specific species are fine at this level.',
-    hard:'a rare, obscure, or unusual animal that most adults would not immediately recognize — examples: pangolin, axolotl, tapir, capybara, binturong, fossa, numbat, quokka, narwhal, goblin shark, mantis shrimp, leafy sea dragon, shoebill, kakapo, harpy eagle, tarsier, naked mole rat, aye-aye, saiga antelope, okapi, maned wolf, sun bear.'
+    easy:'a very common, widely recognized animal that any young child would know by its GENERAL name — use the simple common name only (e.g. "Shark" not "Great White Shark", "Bear" not "Grizzly Bear", "Eagle" not "Bald Eagle"). The scientific_name field should match the general animal, not a specific subspecies.',
+    medium:'a real animal that most adults would recognize but requires some knowledge — specific species names are appropriate here (e.g. "Grizzly Bear", "Blue Whale", "Komodo Dragon").',
+    hard:'a rare, obscure, or unusual animal that most adults would not immediately recognize — very specific or unusual species.'
   }[diff];
   const hardBan = ['Elephant','African Elephant','Asian Elephant'];
   const allExcluded = [...new Set([...hardBan, ...recentAnimals])];
@@ -638,7 +721,7 @@ async function startGame(){
   qaView='chrono';
   document.getElementById('main-input').value='';
   updateInputMode();renderQBubbles();renderSuggestions();
-  hideAll();show('panel-game');setTimeout(()=>document.getElementById('main-input').focus(),100);
+  hideAll();show('panel-game');setTimeout(()=>{showHost(pickLine(HOST_LINES.opening));document.getElementById('main-input').focus();},100);
 }
 
 /* v5 */
@@ -716,7 +799,7 @@ function launchConfetti(){
   requestAnimationFrame(draw);
 }
 
-function resetGame(){G=null;['panel-result-win','panel-result-lose'].forEach(hide);hideAll();show('panel-setup');document.getElementById('start-btn').disabled=false;}
+function resetGame(){G=null;['panel-result-win','panel-result-lose'].forEach(hide);hideAll();hideHost();show('panel-setup');document.getElementById('start-btn').disabled=false;}
 function renderLB(){
   const body=document.getElementById('lb-body');
   if(!leaderboard.length){body.innerHTML='<div style="font-size:14px;color:var(--text3);text-align:center;padding:1.5rem 0;font-weight:700;">No games yet!</div>';updateStats();return;}
