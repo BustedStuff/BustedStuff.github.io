@@ -464,6 +464,8 @@ function hideHost(){
   const bubble=document.getElementById('host-bubble');
   if(bubble)bubble.classList.add('hidden');
 }
+const MAX_Q=21;
+let G=null, leaderboard=[], asking=false, selectedDiff='easy';
 let selectedCats=new Set(['land','sky','ocean','fresh']);
 let recentAnimals=JSON.parse(localStorage.getItem('21q-recent')||'[]');
 const MAX_RECENT=8;
