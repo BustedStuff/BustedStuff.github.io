@@ -343,17 +343,19 @@ if (AI_ENABLED) document.getElementById('mode-indicator').className = 'mode-badg
 })();
 
 async function callAI(sys,usr,max=600) {
-  const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:max,system:sys,messages:[{role:'user',content:usr}]})});
-  if(!res.ok){
-    const errText=await res.text().catch(()=>'');
-    throw new Error(`Worker ${res.status}: ${errText}`);
-  }
-  const data=await res.json();
-  if(data.error) throw new Error(`API error: ${JSON.stringify(data.error)}`);
-  const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-  if(!text) throw new Error('Empty response from API');
-  const m=text.match(/\{[\s\S]*?\}/); if(!m) throw new Error(`No JSON in: ${text.slice(0,100)}`);
-  return JSON.parse(m[0]);
+  const controller=new AbortController();
+  const tid=setTimeout(()=>controller.abort(),15000);
+  try{
+    const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:max,system:sys,messages:[{role:'user',content:usr}]})});
+    clearTimeout(tid);
+    if(!res.ok){const errText=await res.text().catch(()=>'');throw new Error(`Worker ${res.status}: ${errText}`);}
+    const data=await res.json();
+    if(data.error)throw new Error(`API error: ${JSON.stringify(data.error)}`);
+    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if(!text)throw new Error('Empty response from API');
+    const m=text.match(/\{[\s\S]*?\}/);if(!m)throw new Error(`No JSON in: ${text.slice(0,100)}`);
+    return JSON.parse(m[0]);
+  }catch(e){clearTimeout(tid);throw e;}
 }
 
 const imgCache={};
@@ -701,6 +703,14 @@ async function startGame(){
     const src=pool.length>0?pool:keys.flatMap(k=>STATIC[diff][k]||[]);
     const name=src[Math.floor(Math.random()*src.length)];
     animal={name,scientific_name:'',habitat:cats.includes('ocean')?'ocean':'land',fun_fact:'',wiki:name.replace(/ /g,'_'),category:cats.includes('ocean')?'ocean':'land'};
+  }
+
+  if(!animal){
+    // Total fallback — should never happen but just in case
+    hideAll();show('panel-setup');
+    document.getElementById('start-btn').disabled=false;
+    document.getElementById('diff-hint').textContent='Could not connect — please try again.';
+    return;
   }
 
   recentAnimals.unshift(animal.name);
