@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Call Trivia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --amber: #F5A623;
+    --amber-dark: #C4801A;
+    --chalk: #F0EAD6;
+    --chalk-dim: #A8A090;
+    --board: #171E16;
+    --board-mid: #1F2A1D;
+    --board-light: #283824;
+    --glow: rgba(245,166,35,0.18);
+    --cat-music:   #9B59B6;
+    --cat-sports:  #27AE60;
+    --cat-movies:  #E74C3C;
+    --cat-history: #E67E22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--board);
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(255,255,255,0.012) 28px, rgba(255,255,255,0.012) 29px),
+      repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(255,255,255,0.012) 28px, rgba(255,255,255,0.012) 29px);
+    font-family: 'Inter', sans-serif;
+    color: var(--chalk);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { width: 100%; max-width: 880px; padding: 0 16px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    padding: 28px 0 18px;
+    border-bottom: 2px solid rgba(245,166,35,0.25);
+    margin-bottom: 24px;
+  }
+  .header-eyebrow {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--amber);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 10vw, 86px);
+    letter-spacing: 4px;
+    color: var(--chalk);
+    text-shadow: 0 0 40px var(--glow), 0 2px 0 var(--amber-dark);
+    line-height: 1;
+  }
+  .header-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--chalk-dim);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── SETUP ── */
+  .setup-card {
+    background: var(--board-mid);
+    border: 1px solid rgba(245,166,35,0.18);
+    border-radius: 14px;
+    padding: 28px 30px;
+    margin-bottom: 20px;
+  }
+  .setup-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .player-input {
+    background: var(--board-light);
+    border: 1px solid rgba(245,166,35,0.22);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--chalk);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .player-input:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.12);
+  }
+  .player-input::placeholder { color: var(--chalk-dim); font-weight: 400; }
+
+  .count-control { display: flex; align-items: center; gap: 14px; }
+  .count-btn {
+    background: var(--board-light);
+    border: 1px solid rgba(245,166,35,0.28);
+    color: var(--amber);
+    font-size: 20px;
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    font-family: 'Outfit', sans-serif;
+  }
+  .count-btn:hover { background: var(--board); }
+  .count-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    color: var(--amber);
+    min-width: 30px;
+    text-align: center;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 13px 32px;
+    border-radius: 9px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s, opacity 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--amber);
+    color: var(--board);
+    box-shadow: 0 4px 16px rgba(245,166,35,0.32);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 24px rgba(245,166,35,0.48); }
+  .btn-primary:disabled { opacity: 0.38; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    border: 1.5px solid rgba(245,166,35,0.4);
+    color: var(--amber);
+  }
+  .btn-ghost:hover { background: rgba(245,166,35,0.08); }
+  /* ── CATEGORY CHIPS ── */
+  .category-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid;
+    transition: all 0.15s;
+    user-select: none;
+    letter-spacing: 0.5px;
+  }
+  .chip-music   { border-color: var(--cat-music);   color: #D7BDE2; }
+  .chip-music.on   { background: var(--cat-music);   color: #fff; }
+  .chip-sports  { border-color: var(--cat-sports);  color: #A9DFBF; }
+  .chip-sports.on  { background: var(--cat-sports);  color: #fff; }
+  .chip-movies  { border-color: var(--cat-movies);  color: #F1948A; }
+  .chip-movies.on  { background: var(--cat-movies);  color: #fff; }
+  .chip-history { border-color: var(--cat-history); color: #FAD7A0; }
+  .chip-history.on { background: var(--cat-history); color: #fff; }
+
+  /* ── GAME LAYOUT ── */
+  .game-layout { display: grid; grid-template-columns: 1fr 220px; gap: 20px; }
+  @media(max-width:620px){ .game-layout { grid-template-columns: 1fr; } }
+
+  /* ── SCOREBOARD ── */
+  .scoreboard {
+    background: var(--board-mid);
+    border: 1px solid rgba(245,166,35,0.18);
+    border-radius: 14px;
+    padding: 18px;
+    position: sticky;
+    top: 16px;
+    max-height: 82vh;
+    overflow-y: auto;
+  }
+  .scoreboard h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+    text-align: center;
+    border-bottom: 1px solid rgba(245,166,35,0.18);
+    padding-bottom: 10px;
+  }
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 7px;
+    margin-bottom: 6px;
+    background: var(--board-light);
+    transition: all 0.3s;
+  }
+  .score-row.leading {
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.28);
+  }
+  .score-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 112px;
+  }
+  .score-pts {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--amber);
+    min-width: 40px;
+    text-align: right;
+  }
+  .score-bar { height: 3px; background: rgba(245,166,35,0.12); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .score-bar-fill { height: 100%; background: var(--amber); transition: width 0.5s ease; border-radius: 2px; }
+
+  /* ── QUESTION PANEL ── */
+  .question-panel { display: flex; flex-direction: column; gap: 14px; }
+
+  .current-player-bar {
+    background: rgba(245,166,35,0.09);
+    border: 1px solid rgba(245,166,35,0.28);
+    border-radius: 9px;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .current-player-bar .label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--chalk-dim);
+  }
+  .current-player-bar .name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .current-player-bar .pts-badge {
+    margin-left: auto;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px;
+    background: var(--amber);
+    color: var(--board);
+    padding: 2px 10px;
+    border-radius: 5px;
+  }
+
+  /* ── GAME CARD ── */
+  .q-card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .q-card::before {
+    content: ''; display: block; height: 7px; width: 100%;
+  }
+  .q-card.cat-music::before   { background: var(--cat-music); }
+  .q-card.cat-sports::before  { background: var(--cat-sports); }
+  .q-card.cat-movies::before  { background: var(--cat-movies); }
+  .q-card.cat-history::before { background: var(--cat-history); }
+  .q-card.cat-loading::before { background: rgba(245,166,35,0.25); }
+
+  .q-card-inner {
+    background: var(--board-mid);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 22px 26px 26px;
+    position: relative;
+  }
+
+  .q-cat-icon {
+    position: absolute;
+    top: 16px; right: 20px;
+    font-size: 46px;
+    line-height: 1;
+    opacity: 0.88;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    pointer-events: none; user-select: none;
+  }
+
+  .q-card-meta-row { display: flex; align-items: center; gap: 0; margin-bottom: 4px; }
+
+  .q-cat-label {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 3px 11px; border-radius: 20px; margin-bottom: 12px;
+  }
+  .q-cat-label.cat-music   { background: rgba(155,89,182,0.22); color: #D7BDE2; border: 1px solid rgba(155,89,182,0.45); }
+  .q-cat-label.cat-sports  { background: rgba(39,174,96,0.18);  color: #A9DFBF; border: 1px solid rgba(39,174,96,0.38); }
+  .q-cat-label.cat-movies  { background: rgba(231,76,60,0.18);  color: #F1948A; border: 1px solid rgba(231,76,60,0.38); }
+  .q-cat-label.cat-history { background: rgba(230,126,34,0.18); color: #FAD7A0; border: 1px solid rgba(230,126,34,0.38); }
+
+  .q-year-tag {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--chalk-dim); margin-bottom: 12px; margin-left: 8px;
+  }
+
+  .q-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(17px, 2.8vw, 22px);
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 22px;
+    color: var(--chalk);
+    padding-right: 58px;
+  }
+
+  .q-card-inner::after {
+    content: ''; position: absolute; bottom: 0; right: 0;
+    width: 28px; height: 28px;
+    background: linear-gradient(225deg, var(--board) 50%, transparent 50%);
+    border-radius: 0 0 16px 0; opacity: 0.45;
+  }
+
+  .q-loading {
+    text-align: center; padding: 40px 0;
+    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 500;
+    color: var(--chalk-dim); letter-spacing: 0.5px;
+  }
+  .q-loading .spinner {
+    display: inline-block; width: 38px; height: 38px;
+    border: 3px solid rgba(245,166,35,0.18);
+    border-top-color: var(--amber); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── OPTIONS ── */
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media(max-width:480px){ .options-grid { grid-template-columns: 1fr; } }
+
+  .option-btn {
+    background: var(--board-light);
+    border: 2px solid rgba(245,166,35,0.14);
+    border-radius: 10px;
+    padding: 13px 15px;
+    color: var(--chalk);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    line-height: 1.35;
+    position: relative;
+  }
+  .option-btn:hover:not(:disabled):not(.locked) {
+    border-color: var(--amber);
+    background: rgba(245,166,35,0.07);
+    transform: translateY(-1px);
+  }
+  .option-btn:disabled { cursor: not-allowed; transform: none; }
+  .option-btn.correct {
+    background: rgba(39,174,96,0.18);
+    border-color: #27AE60; color: #A9DFBF;
+  }
+  .option-btn.wrong {
+    background: rgba(192,57,43,0.18);
+    border-color: #C0392B; color: #F1948A;
+  }
+
+  /* ── ANSWER REVEAL ── */
+  .answer-reveal {
+    margin-top: 16px;
+    border-radius: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    display: none;
+    overflow: hidden;
+  }
+  .answer-reveal.show { display: block; }
+
+  .reveal-inner {
+    padding: 16px 18px;
+  }
+  .answer-reveal.correct-msg .reveal-inner { background: rgba(39,174,96,0.14); border: 1px solid rgba(39,174,96,0.4); border-radius: 12px; }
+  .answer-reveal.wrong-msg   .reveal-inner { background: rgba(192,57,43,0.14); border: 1px solid rgba(192,57,43,0.4); border-radius: 12px; }
+
+  .reveal-headline {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .answer-reveal.correct-msg .reveal-headline { color: #A9DFBF; }
+  .answer-reveal.wrong-msg   .reveal-headline { color: #F1948A; }
+
+  .reveal-fact {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--chalk-dim);
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  .reveal-image-wrap {
+    width: 100%;
+    max-height: 220px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--board-light);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 4px;
+  }
+  .reveal-image-wrap img {
+    width: 100%; height: 220px; object-fit: cover;
+    border-radius: 8px; display: block;
+    transition: opacity 0.4s;
+  }
+  .reveal-image-wrap img.loading { opacity: 0; }
+  .reveal-image-wrap img.loaded  { opacity: 1; }
+  .reveal-img-caption {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; font-weight: 400;
+    color: var(--chalk-dim); margin-top: 5px;
+    letter-spacing: 0.3px; font-style: italic;
+    padding: 0 2px;
+  }
+
+  /* ── NEXT BTN ROW ── */
+  .next-btn-row { display: flex; justify-content: flex-end; margin-top: 6px; }
+
+  /* ── WIN SCREEN ── */
+  .win-screen { text-align: center; padding: 56px 20px; }
+  .win-trophy { font-size: 78px; line-height: 1; margin-bottom: 14px; animation: bounce 0.6s ease infinite alternate; }
+  @keyframes bounce { to { transform: translateY(-12px); } }
+  .win-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(44px, 9vw, 72px);
+    color: var(--amber); text-shadow: 0 0 40px var(--glow);
+    margin-bottom: 8px; letter-spacing: 3px;
+  }
+  .win-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px; font-weight: 500;
+    color: var(--chalk-dim); margin-bottom: 36px;
+  }
+  .final-podium { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 36px; }
+  .podium-card {
+    background: var(--board-mid);
+    border: 1px solid rgba(245,166,35,0.18);
+    border-radius: 13px; padding: 18px 22px; min-width: 128px;
+  }
+  .podium-card.first { border-color: var(--amber); box-shadow: 0 0 22px rgba(245,166,35,0.22); }
+  .podium-place { font-family: 'Bebas Neue', sans-serif; font-size: 34px; color: var(--amber); }
+  .podium-name  { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .podium-score { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--chalk-dim); }
+
+  /* ── MISC ── */
+  .divider { height: 1px; background: rgba(245,166,35,0.12); margin: 18px 0; }
+  .text-center { text-align: center; }
+  .mt-8  { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+
+  .confetti-piece {
+    position: fixed; width: 10px; height: 14px; top: -20px; border-radius: 2px;
+    animation: confetti-fall linear forwards; z-index: 999; pointer-events: none;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">🍺 Welcome to</div>
+    <h1>Last Call Trivia</h1>
+    <div class="header-sub">1950 – 2025 &nbsp;·&nbsp; Music &nbsp;·&nbsp; Sports &nbsp;·&nbsp; Movies &nbsp;·&nbsp; History</div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-card">
+      <div class="setup-label">🎯 Number of Teams</div>
+      <div class="count-control">
+        <button class="count-btn" onclick="changeCount(-1)">−</button>
+        <div class="count-display" id="count-display">4</div>
+        <button class="count-btn" onclick="changeCount(1)">+</button>
+        <span style="font-size:13px;color:var(--chalk-dim);margin-left:8px;">up to 10</span>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-label">✏️ Team Names</div>
+      <div class="player-grid" id="player-grid"></div>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-label">📚 Categories</div>
+      <div class="category-chips">
+        <div class="chip chip-music on"   data-cat="music"   onclick="toggleCat(this)">🎵 Music</div>
+        <div class="chip chip-sports on"  data-cat="sports"  onclick="toggleCat(this)">🏆 Sports</div>
+        <div class="chip chip-movies on"  data-cat="movies"  onclick="toggleCat(this)">🎬 Movies</div>
+        <div class="chip chip-history on" data-cat="history" onclick="toggleCat(this)">📜 History</div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--chalk-dim);font-family:'Outfit',sans-serif;">Click to toggle. At least one required.</div>
+    </div>
+
+    <div class="text-center mt-16">
+      <button class="btn btn-primary" onclick="startGame()">Start the Night</button>
+    </div>
+    <div class="mt-8 text-center" style="font-size:12px;color:var(--chalk-dim);font-family:'Outfit',sans-serif;">First to 100 points wins &nbsp;·&nbsp; 10 pts per correct answer</div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="screen">
+    <div class="game-layout">
+
+      <!-- LEFT: QUESTION PANEL -->
+      <div class="question-panel">
+        <div class="current-player-bar" id="player-bar">
+          <div>
+            <div class="label">Now Playing</div>
+            <div class="name" id="bar-name">—</div>
+          </div>
+          <div class="pts-badge" id="bar-pts">0 pts</div>
+        </div>
+
+        <div class="q-card cat-loading" id="q-card">
+          <div class="q-card-inner">
+            <div class="q-loading">
+              <div class="spinner"></div><br>Pulling a question from the vault…
+            </div>
+          </div>
+        </div>
+
+        <div class="next-btn-row">
+          <button class="btn btn-ghost" id="next-btn" onclick="nextQuestion()" style="display:none;">Next Question →</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: SCOREBOARD -->
+      <div class="scoreboard">
+        <h3>🏆 Scoreboard</h3>
+        <div id="scoreboard-rows"></div>
+        <div class="divider"></div>
+        <div style="text-align:center;font-size:11px;color:var(--chalk-dim);font-family:'Outfit',sans-serif;">First to 100 wins</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIN SCREEN -->
+  <div id="screen-win" class="screen">
+    <div class="win-screen">
+      <div class="win-trophy">🏆</div>
+      <div class="win-title" id="win-title">WINNER!</div>
+      <div class="win-sub" id="win-sub">…called last round!</div>
+      <div class="final-podium" id="final-podium"></div>
+      <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const GOAL = 100;
+const PTS  = 10;
+let playerCount = 4;
+let players = [];
+let scores  = [];
+let categories = ['music','sports','movies','history'];
+let currentPlayerIdx = 0;
+let questionActive = false;
+let usedQuestions  = new Set();
+
+let currentQuestion   = null;
+
+// ─── SETUP ────────────────────────────────────────────────────────────────────
+function changeCount(d) {
+  playerCount = Math.min(10, Math.max(1, playerCount + d));
+  document.getElementById('count-display').textContent = playerCount;
+  renderPlayerInputs();
+}
+
+function renderPlayerInputs() {
+  const grid = document.getElementById('player-grid');
+  const existing = [...grid.querySelectorAll('input')].map(i => i.value);
+  grid.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'player-input';
+    inp.placeholder = `Team ${i+1}`;
+    inp.value = existing[i] || '';
+    inp.maxLength = 24;
+    grid.appendChild(inp);
+  }
+}
+
+function toggleCat(el) {
+  const isOn = el.classList.contains('on');
+  if (isOn && document.querySelectorAll('.chip.on').length === 1) return;
+  el.classList.toggle('on');
+  categories = [...document.querySelectorAll('.chip.on')].map(c => c.dataset.cat);
+}
+
+function startGame() {
+  const inputs = document.querySelectorAll('.player-input');
+  players = [...inputs].map((inp, i) => inp.value.trim() || `Team ${i+1}`);
+  scores = new Array(players.length).fill(0);
+  currentPlayerIdx = 0;
+  usedQuestions.clear();
+  showScreen('game');
+  renderScoreboard();
+  fetchQuestion();
+}
+
+// ─── SCREENS ──────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ─── SCOREBOARD ───────────────────────────────────────────────────────────────
+function renderScoreboard() {
+  const rows = document.getElementById('scoreboard-rows');
+  const sorted = players.map((p,i) => ({name:p, pts:scores[i]})).sort((a,b) => b.pts - a.pts);
+  rows.innerHTML = sorted.map((p, rank) => `
+    <div class="score-row ${rank===0 && p.pts>0 ? 'leading':''}">
+      <div style="min-width:0">
+        <div class="score-name">${rank===0 && p.pts>0 ? '👑 ':''}${esc(p.name)}</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${Math.min(100, p.pts)}%"></div></div>
+      </div>
+      <div class="score-pts">${p.pts}</div>
+    </div>`).join('');
+}
+
+function updatePlayerBar() {
+  document.getElementById('bar-name').textContent = players[currentPlayerIdx];
+  document.getElementById('bar-pts').textContent  = `${scores[currentPlayerIdx]} pts`;
+}
+
+// ─── QUESTION FETCH ───────────────────────────────────────────────────────────
+async function fetchQuestion() {
+  questionActive = false;
+  currentQuestion = null;
+  document.getElementById('next-btn').style.display = 'none';
+  const qCard = document.getElementById('q-card');
+  qCard.className = 'q-card cat-loading';
+  qCard.innerHTML = `<div class="q-card-inner"><div class="q-loading"><div class="spinner"></div><br>Pulling from the vault…</div></div>`;
+  updatePlayerBar();
+
+  const cat    = categories[Math.floor(Math.random() * categories.length)];
+  const year   = 1950 + Math.floor(Math.random() * 76);
+  const usedArr= [...usedQuestions].slice(-40).join(', ');
+
+  const prompt = `You are a bar trivia host. Generate a single multiple-choice trivia question about ${cat} from the year ${year} (or within a few years of ${year}).
+
+Rules:
+- The question must relate to real verifiable facts from roughly ${year}.
+- Provide exactly 4 answer options labeled A, B, C, D.
+- Exactly one option is correct.
+- Keep the question concise (1-2 sentences).
+- Do not repeat any of these recent question topics: ${usedArr || 'none yet'}.
+- For image_query: provide a short 3-5 word Wikimedia Commons search string that would find a relevant, safe, educational image for the correct answer (e.g. "Michael Jackson Thriller album", "1969 Moon landing", "Casablanca 1942 film poster"). Avoid queries likely to return people's faces; prefer events, objects, album covers, movie posters, stadiums, logos.
+
+Respond ONLY with valid JSON, no markdown:
+{
+  "question": "...",
+  "year": ${year},
+  "category": "${cat}",
+  "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+  "correct": 0,
+  "fun_fact": "One interesting sentence of context about the correct answer.",
+  "image_query": "..."
+}
+"correct" is the 0-based index of the correct option.`;
+
+  try {
+    const res  = await fetch('https://hidden-limit-f2ce.nsaund85.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 120));
+    }
+    const data = await res.json();
+    const raw  = data.content.find(b => b.type === 'text')?.text || '';
+    if (!raw) throw new Error('Empty response from API');
+    const q    = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    usedQuestions.add(q.question.slice(0,60));
+    currentQuestion = q;
+    renderQuestion(q);
+  } catch(e) {
+    console.error('fetchQuestion error:', e);
+    const qc = document.getElementById('q-card');
+    qc.className = 'q-card cat-loading';
+    qc.innerHTML = '<div class="q-card-inner"><div class="q-loading" style="color:#F1948A;">'
+      + '⚠️ ' + esc(e.message || 'Could not load question') + '<br>'
+      + '<button class="btn btn-ghost" onclick="fetchQuestion()" style="margin-top:14px;">Try Again</button>'
+      + '</div></div>';
+  }
+}
+
+// ─── RENDER QUESTION ──────────────────────────────────────────────────────────
+function renderQuestion(q) {
+  const icons  = { music:'🎵', sports:'🏆', movies:'🎬', history:'📜' };
+  const labels = { music:'Music', sports:'Sports', movies:'Movies', history:'History' };
+
+  const optHtml = q.options.map((opt, i) => `
+    <button class="option-btn" id="opt-${i}" onclick="submitAnswer(${i}, ${q.correct}, this, currentQuestion)" data-idx="${i}">
+      ${esc(opt)}
+    </button>`).join('');
+
+  const qCard = document.getElementById('q-card');
+  qCard.className = `q-card cat-${q.category}`;
+  qCard.innerHTML = `
+    <div class="q-card-inner">
+      <div class="q-cat-icon">${icons[q.category]||'❓'}</div>
+      <div class="q-card-meta-row">
+        <span class="q-cat-label cat-${q.category}">${labels[q.category]}</span>
+        <span class="q-year-tag">· ${q.year}</span>
+      </div>
+      <div class="q-text">${esc(q.question)}</div>
+      <div class="options-grid">${optHtml}</div>
+      <div class="answer-reveal" id="answer-reveal"></div>
+    </div>`;
+  questionActive = true;
+}
+
+// ─── SUBMIT ANSWER ────────────────────────────────────────────────────────────
+function submitAnswer(chosen, correct, btn, q) {
+  if (!questionActive) return;
+  questionActive = false;
+
+  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+  document.getElementById(`opt-${correct}`).classList.add('correct');
+
+  const reveal = document.getElementById('answer-reveal');
+  const isCorrect = chosen === correct;
+
+  if (isCorrect) {
+    document.getElementById(`opt-${chosen}`).classList.add('correct');
+    scores[currentPlayerIdx] += PTS;
+    renderScoreboard();
+    updatePlayerBar();
+  } else {
+    document.getElementById(`opt-${chosen}`).classList.add('wrong');
+  }
+
+  // Build reveal HTML (image loads async)
+  const imgId = 'reveal-img-' + Date.now();
+  reveal.className = `answer-reveal show ${isCorrect ? 'correct-msg' : 'wrong-msg'}`;
+
+  const correctText = q.options[correct].replace(/^[A-D]\)\s*/,'');
+  const headline = isCorrect
+    ? `✅ Correct! +${PTS} points for ${esc(players[currentPlayerIdx])}!`
+    : `❌ Not quite — the answer was: <strong>${esc(correctText)}</strong>`;
+
+  reveal.innerHTML = `
+    <div class="reveal-inner">
+      <div class="reveal-headline">${headline}</div>
+      <div class="reveal-fact">${esc(q.fun_fact || '')}</div>
+      <div class="reveal-image-wrap" id="img-wrap-${imgId}" style="display:none;">
+        <img id="${imgId}" class="loading" alt="Related image" />
+      </div>
+      <div class="reveal-img-caption" id="cap-${imgId}" style="display:none;"></div>
+    </div>`;
+
+  document.getElementById('next-btn').style.display = 'inline-block';
+
+  // Load image async via Wikimedia
+  if (q.image_query) loadRevealImage(q.image_query, imgId);
+
+  if (isCorrect && scores[currentPlayerIdx] >= GOAL) {
+    setTimeout(() => showWin(currentPlayerIdx), 1400);
+  }
+}
+
+// ─── WIKIMEDIA IMAGE ──────────────────────────────────────────────────────────
+async function loadRevealImage(query, imgId) {
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=${encodeURIComponent(query)}&pithumbsize=600&format=json&origin=*`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    const pages = data?.query?.pages || {};
+    const page  = Object.values(pages)[0];
+    const src   = page?.thumbnail?.source;
+
+    if (src) {
+      const wrap = document.getElementById(`img-wrap-${imgId}`);
+      const cap  = document.getElementById(`cap-${imgId}`);
+      const img  = document.getElementById(imgId);
+      if (!wrap || !img) return;
+      img.src = src;
+      img.onload = () => { img.classList.remove('loading'); img.classList.add('loaded'); };
+      wrap.style.display = 'flex';
+      if (cap) {
+        cap.textContent = page.title || query;
+        cap.style.display = 'block';
+      }
+    }
+  } catch(e) { /* silently skip if image fails */ }
+}
+
+// ─── NEXT QUESTION ────────────────────────────────────────────────────────────
+function nextQuestion() {
+  currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+  fetchQuestion();
+}
+
+// ─── WIN ──────────────────────────────────────────────────────────────────────
+function showWin(idx) {
+  launchConfetti();
+  document.getElementById('win-title').textContent = `${players[idx].toUpperCase()} WINS!`;
+  document.getElementById('win-sub').textContent   = `Hit ${GOAL} points and called last round!`;
+  const sorted = players.map((p,i) => ({name:p,pts:scores[i]})).sort((a,b)=>b.pts-a.pts);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('final-podium').innerHTML = sorted.map((p,r) => `
+    <div class="podium-card ${r===0?'first':''}">
+      <div class="podium-place">${medals[r]||`#${r+1}`}</div>
+      <div class="podium-name">${esc(p.name)}</div>
+      <div class="podium-score">${p.pts} pts</div>
+    </div>`).join('');
+  showScreen('win');
+}
+
+function launchConfetti() {
+  const colors = ['#F5A623','#27AE60','#9B59B6','#E74C3C','#3498DB','#F2EDD7'];
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*0.5}s;transform:rotate(${Math.random()*360}deg);`;
+      document.body.appendChild(c);
+      c.addEventListener('animationend', ()=>c.remove());
+    }, i*30);
+  }
+}
+
+function resetGame() {
+  players = []; scores = [];
+  showScreen('setup');
+  renderPlayerInputs();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+renderPlayerInputs();
+</script>
+</body>
+</html>
