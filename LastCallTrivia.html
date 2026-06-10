@@ -434,6 +434,49 @@
   }
   .submit-bar .selected-label strong { color: var(--chalk); }
 
+  /* ── OPEN ANSWER INPUT ── */
+  .open-answer-wrap {
+    margin-top: 4px;
+  }
+  .open-answer-input {
+    width: 100%;
+    background: var(--board-light);
+    border: 2px solid rgba(245,166,35,0.22);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--chalk);
+    font-family: 'Outfit', sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 10px;
+  }
+  .open-answer-input:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.12);
+  }
+  .open-answer-input::placeholder { color: var(--chalk-dim); font-weight: 400; }
+  .open-answer-input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .open-answer-hint {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px; font-weight: 400;
+    color: var(--chalk-dim); margin-bottom: 12px;
+    font-style: italic;
+  }
+  .open-submit-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .open-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 20px;
+    background: rgba(245,166,35,0.15); color: var(--amber);
+    border: 1px solid rgba(245,166,35,0.3);
+    margin-bottom: 12px; width: fit-content;
+  }
+
   /* ── ANSWER REVEAL ── */
   .answer-reveal {
     margin-top: 16px;
@@ -724,7 +767,30 @@ async function fetchQuestion() {
   const year   = 1950 + Math.floor(Math.random() * 76);
   const usedArr= [...usedQuestions].slice(-40).join(', ');
 
-  const prompt = `You are a bar trivia host. Generate a single multiple-choice trivia question about ${cat} from the year ${year} (or within a few years of ${year}).
+  const isOpen = Math.random() < 0.4;
+
+  const prompt = isOpen
+    ? `You are a bar trivia host. Generate a single OPEN-ENDED trivia question about ${cat} from the year ${year} (or within a few years of ${year}) with a short specific answer.
+
+Rules:
+- The answer must be 1-4 words: a name, title, number, or short phrase.
+- One clear unambiguous correct answer only.
+- Keep the question concise (1-2 sentences).
+- Do not repeat any of these recent question topics: ${usedArr || 'none yet'}.
+- For image_url: provide a DIRECT embeddable Wikipedia image URL in the format https://en.wikipedia.org/wiki/Special:FilePath/FILENAME.jpg using a real well-known file related to the answer.
+
+Respond ONLY with valid JSON, no markdown:
+{
+  "type": "open",
+  "question": "...",
+  "year": ${year},
+  "category": "${cat}",
+  "answer": "exact correct answer",
+  "acceptable": ["alternate spelling or short form"],
+  "fun_fact": "One interesting sentence about the answer.",
+  "image_url": "..."
+}`
+    : `You are a bar trivia host. Generate a single multiple-choice trivia question about ${cat} from the year ${year} (or within a few years of ${year}).
 
 Rules:
 - The question must relate to real verifiable facts from roughly ${year}.
@@ -732,10 +798,11 @@ Rules:
 - Exactly one option is correct.
 - Keep the question concise (1-2 sentences).
 - Do not repeat any of these recent question topics: ${usedArr || 'none yet'}.
-- For image_url: provide a DIRECT embeddable image URL from Wikipedia. Use this exact format: https://en.wikipedia.org/wiki/Special:FilePath/FILENAME.jpg where FILENAME is a real file on Wikipedia Commons related to the correct answer. Examples: https://en.wikipedia.org/wiki/Special:FilePath/Breakfast_at_Tiffany%27s_%281961_film%29.jpg or https://en.wikipedia.org/wiki/Special:FilePath/Neil_Armstrong_pose.jpg. Pick something iconic and real. If unsure, use a well-known file you are confident exists.
+- For image_url: provide a DIRECT embeddable image URL from Wikipedia. Use this exact format: https://en.wikipedia.org/wiki/Special:FilePath/FILENAME.jpg where FILENAME is a real file on Wikipedia Commons related to the correct answer. Pick something iconic and real. If unsure, use a well-known file you are confident exists.
 
 Respond ONLY with valid JSON, no markdown:
 {
+  "type": "multiple",
   "question": "...",
   "year": ${year},
   "category": "${cat}",
@@ -782,29 +849,52 @@ Respond ONLY with valid JSON, no markdown:
 function renderQuestion(q) {
   const icons  = { music:'🎵', sports:'🏆', movies:'🎬', history:'📜' };
   const labels = { music:'Music', sports:'Sports', movies:'Movies', history:'History' };
-
-  const optHtml = q.options.map((opt, i) => `
-    <button class="option-btn" id="opt-${i}" onclick="selectOption(${i})" data-idx="${i}">
-      ${esc(opt)}
-    </button>`).join('');
-
-  const qCard = document.getElementById('q-card');
+  const qCard  = document.getElementById('q-card');
   qCard.className = `q-card cat-${q.category}`;
-  qCard.innerHTML = `
-    <div class="q-card-inner">
-      <div class="q-cat-icon">${icons[q.category]||'❓'}</div>
-      <div class="q-card-meta-row">
-        <span class="q-cat-label cat-${q.category}">${labels[q.category]}</span>
-        <span class="q-year-tag">· ${q.year}</span>
-      </div>
-      <div class="q-text">${esc(q.question)}</div>
-      <div class="options-grid">${optHtml}</div>
-      <div class="submit-bar" id="submit-bar">
-        <span class="selected-label">Your answer: <strong id="selected-label-text"></strong></span>
-        <button class="btn btn-primary" id="submit-btn" onclick="submitSelected()" style="padding:10px 22px;font-size:14px;">Submit Answer</button>
-      </div>
-      <div class="answer-reveal" id="answer-reveal"></div>
+
+  const metaHtml = `
+    <div class="q-cat-icon">${icons[q.category]||'❓'}</div>
+    <div class="q-card-meta-row">
+      <span class="q-cat-label cat-${q.category}">${labels[q.category]}</span>
+      <span class="q-year-tag">· ${q.year}</span>
     </div>`;
+
+  if (q.type === 'open') {
+    qCard.innerHTML = `
+      <div class="q-card-inner">
+        ${metaHtml}
+        <div class="open-badge">✏️ Open Answer</div>
+        <div class="q-text">${esc(q.question)}</div>
+        <div class="open-answer-wrap">
+          <input type="text" class="open-answer-input" id="open-input"
+            placeholder="Type your answer…"
+            onkeydown="if(event.key==='Enter') submitOpenAnswer()"
+            autocomplete="off" autocorrect="off" spellcheck="false" />
+          <div class="open-answer-hint">Spelling close enough counts — just give it your best shot!</div>
+          <div class="open-submit-row">
+            <button class="btn btn-primary" onclick="submitOpenAnswer()" style="padding:10px 22px;font-size:14px;">Submit Answer</button>
+          </div>
+        </div>
+        <div class="answer-reveal" id="answer-reveal"></div>
+      </div>`;
+    setTimeout(() => { const el = document.getElementById('open-input'); if(el) el.focus(); }, 50);
+  } else {
+    const optHtml = q.options.map((opt, i) => `
+      <button class="option-btn" id="opt-${i}" onclick="selectOption(${i})" data-idx="${i}">
+        ${esc(opt)}
+      </button>`).join('');
+    qCard.innerHTML = `
+      <div class="q-card-inner">
+        ${metaHtml}
+        <div class="q-text">${esc(q.question)}</div>
+        <div class="options-grid">${optHtml}</div>
+        <div class="submit-bar" id="submit-bar">
+          <span class="selected-label">Your answer: <strong id="selected-label-text"></strong></span>
+          <button class="btn btn-primary" id="submit-btn" onclick="submitSelected()" style="padding:10px 22px;font-size:14px;">Submit Answer</button>
+        </div>
+        <div class="answer-reveal" id="answer-reveal"></div>
+      </div>`;
+  }
   questionActive = true;
 }
 
@@ -825,6 +915,85 @@ function submitSelected() {
   if (selectedIdx === null || !currentQuestion) return;
   const btn = document.getElementById('opt-' + selectedIdx);
   submitAnswer(selectedIdx, currentQuestion.correct, btn, currentQuestion);
+}
+
+// ─── FUZZY MATCHING (Levenshtein distance) ───────────────────────────────────
+function levenshtein(a, b) {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => Array.from({length: n+1}, (_, j) => i===0?j:j===0?i:0));
+  for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+  return dp[m][n];
+}
+
+function fuzzyMatch(typed, correct, acceptable) {
+  const t = typed.toLowerCase().trim();
+  const c = correct.toLowerCase().trim();
+  if (!t) return false;
+  // Exact match
+  if (t === c) return true;
+  // Check acceptable variants
+  const all = [c, ...(acceptable||[]).map(s=>s.toLowerCase().trim())];
+  for (const ans of all) {
+    if (t === ans) return true;
+    // Allow up to 2 edits for short answers, up to 3 for longer
+    const threshold = ans.length <= 5 ? 1 : ans.length <= 10 ? 2 : 3;
+    if (levenshtein(t, ans) <= threshold) return true;
+    // Also check if typed answer is contained within correct (handles "The Beatles" vs "Beatles")
+    if (ans.includes(t) && t.length >= ans.length * 0.6) return true;
+    if (t.includes(ans) && ans.length >= t.length * 0.6) return true;
+  }
+  return false;
+}
+
+// ─── OPEN ANSWER SUBMIT ───────────────────────────────────────────────────────
+function submitOpenAnswer() {
+  if (!questionActive || !currentQuestion) return;
+  const input = document.getElementById('open-input');
+  if (!input) return;
+  const typed = input.value.trim();
+  if (!typed) { input.focus(); return; }
+
+  questionActive = false;
+  input.disabled = true;
+  const submitBtn = input.closest('.q-card-inner').querySelector('.open-submit-row .btn');
+  if (submitBtn) submitBtn.disabled = true;
+
+  const q = currentQuestion;
+  const isCorrect = fuzzyMatch(typed, q.answer, q.acceptable);
+
+  if (isCorrect) {
+    scores[currentPlayerIdx] += PTS;
+    renderScoreboard();
+    updatePlayerBar();
+  }
+
+  const imgId = 'reveal-img-' + Date.now();
+  const reveal = document.getElementById('answer-reveal');
+  reveal.className = `answer-reveal show ${isCorrect ? 'correct-msg' : 'wrong-msg'}`;
+
+  const headline = isCorrect
+    ? `✅ Correct! +${PTS} points for ${esc(players[currentPlayerIdx])}!`
+    : `❌ Not quite — the answer was: <strong>${esc(q.answer)}</strong>`;
+
+  reveal.innerHTML = `
+    <div class="reveal-inner">
+      <div class="reveal-headline">${headline}</div>
+      ${!isCorrect ? `<div class="reveal-fact" style="color:var(--chalk-dim);font-size:13px;margin-bottom:6px;">You typed: <em>${esc(typed)}</em></div>` : ''}
+      <div class="reveal-fact">${esc(q.fun_fact || '')}</div>
+      <div class="reveal-image-wrap" id="img-wrap-${imgId}" style="display:none;">
+        <img id="${imgId}" class="loading" alt="Related image" />
+      </div>
+      <div class="reveal-img-caption" id="cap-${imgId}" style="display:none;"></div>
+    </div>`;
+
+  document.getElementById('next-btn').style.display = 'inline-block';
+  if (q.image_url) loadRevealImage(q.image_url, imgId);
+  if (isCorrect && scores[currentPlayerIdx] >= GOAL) {
+    setTimeout(() => showWin(currentPlayerIdx), 1400);
+  }
 }
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────────────────
