@@ -409,6 +409,30 @@
     background: rgba(192,57,43,0.18);
     border-color: #C0392B; color: #F1948A;
   }
+  .option-btn.selected {
+    border-color: var(--amber);
+    background: rgba(245,166,35,0.14);
+  }
+  .option-btn.selected::after {
+    content: '\2713';
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--amber); font-size: 14px; font-weight: 700;
+  }
+
+  /* ── SUBMIT BAR ── */
+  .submit-bar {
+    display: none;
+    margin-top: 12px;
+    gap: 10px;
+    align-items: center;
+  }
+  .submit-bar.visible { display: flex; }
+  .submit-bar .selected-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px; font-weight: 500;
+    color: var(--chalk-dim); flex: 1;
+  }
+  .submit-bar .selected-label strong { color: var(--chalk); }
 
   /* ── ANSWER REVEAL ── */
   .answer-reveal {
@@ -688,6 +712,7 @@ function updatePlayerBar() {
 async function fetchQuestion() {
   questionActive = false;
   currentQuestion = null;
+  selectedIdx = null;
   document.getElementById('next-btn').style.display = 'none';
   const qCard = document.getElementById('q-card');
   qCard.className = 'q-card cat-loading';
@@ -706,7 +731,7 @@ Rules:
 - Exactly one option is correct.
 - Keep the question concise (1-2 sentences).
 - Do not repeat any of these recent question topics: ${usedArr || 'none yet'}.
-- For image_query: provide a short 3-5 word Wikimedia Commons search string that would find a relevant, safe, educational image for the correct answer (e.g. "Michael Jackson Thriller album", "1969 Moon landing", "Casablanca 1942 film poster"). Avoid queries likely to return people's faces; prefer events, objects, album covers, movie posters, stadiums, logos.
+- For image_url: provide a DIRECT embeddable image URL from Wikipedia. Use this exact format: https://en.wikipedia.org/wiki/Special:FilePath/FILENAME.jpg where FILENAME is a real file on Wikipedia Commons related to the correct answer. Examples: https://en.wikipedia.org/wiki/Special:FilePath/Breakfast_at_Tiffany%27s_%281961_film%29.jpg or https://en.wikipedia.org/wiki/Special:FilePath/Neil_Armstrong_pose.jpg. Pick something iconic and real. If unsure, use a well-known file you are confident exists.
 
 Respond ONLY with valid JSON, no markdown:
 {
@@ -716,7 +741,7 @@ Respond ONLY with valid JSON, no markdown:
   "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
   "correct": 0,
   "fun_fact": "One interesting sentence of context about the correct answer.",
-  "image_query": "..."
+  "image_url": "..."
 }
 "correct" is the 0-based index of the correct option.`;
 
@@ -758,7 +783,7 @@ function renderQuestion(q) {
   const labels = { music:'Music', sports:'Sports', movies:'Movies', history:'History' };
 
   const optHtml = q.options.map((opt, i) => `
-    <button class="option-btn" id="opt-${i}" onclick="submitAnswer(${i}, ${q.correct}, this, currentQuestion)" data-idx="${i}">
+    <button class="option-btn" id="opt-${i}" onclick="selectOption(${i})" data-idx="${i}">
       ${esc(opt)}
     </button>`).join('');
 
@@ -773,9 +798,32 @@ function renderQuestion(q) {
       </div>
       <div class="q-text">${esc(q.question)}</div>
       <div class="options-grid">${optHtml}</div>
+      <div class="submit-bar" id="submit-bar">
+        <span class="selected-label">Your answer: <strong id="selected-label-text"></strong></span>
+        <button class="btn btn-primary" id="submit-btn" onclick="submitSelected()" style="padding:10px 22px;font-size:14px;">Submit Answer</button>
+      </div>
       <div class="answer-reveal" id="answer-reveal"></div>
     </div>`;
   questionActive = true;
+}
+
+// ─── OPTION SELECTION ────────────────────────────────────────────────────────
+let selectedIdx = null;
+
+function selectOption(idx) {
+  if (!questionActive) return;
+  selectedIdx = idx;
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('opt-' + idx).classList.add('selected');
+  const label = currentQuestion.options[idx].replace(/^[A-D]\)\s*/, '');
+  document.getElementById('selected-label-text').textContent = label;
+  document.getElementById('submit-bar').classList.add('visible');
+}
+
+function submitSelected() {
+  if (selectedIdx === null || !currentQuestion) return;
+  const btn = document.getElementById('opt-' + selectedIdx);
+  submitAnswer(selectedIdx, currentQuestion.correct, btn, currentQuestion);
 }
 
 // ─── SUBMIT ANSWER ────────────────────────────────────────────────────────────
@@ -783,7 +831,9 @@ function submitAnswer(chosen, correct, btn, q) {
   if (!questionActive) return;
   questionActive = false;
 
-  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+  document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; b.classList.remove('selected'); });
+  const sb = document.getElementById('submit-bar');
+  if (sb) sb.classList.remove('visible');
   document.getElementById(`opt-${correct}`).classList.add('correct');
 
   const reveal = document.getElementById('answer-reveal');
@@ -820,37 +870,22 @@ function submitAnswer(chosen, correct, btn, q) {
   document.getElementById('next-btn').style.display = 'inline-block';
 
   // Load image async via Wikimedia
-  if (q.image_query) loadRevealImage(q.image_query, imgId);
+  if (q.image_url) loadRevealImage(q.image_url, imgId);
 
   if (isCorrect && scores[currentPlayerIdx] >= GOAL) {
     setTimeout(() => showWin(currentPlayerIdx), 1400);
   }
 }
 
-// ─── WIKIMEDIA IMAGE ──────────────────────────────────────────────────────────
-async function loadRevealImage(query, imgId) {
-  try {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=${encodeURIComponent(query)}&pithumbsize=600&format=json&origin=*`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    const pages = data?.query?.pages || {};
-    const page  = Object.values(pages)[0];
-    const src   = page?.thumbnail?.source;
-
-    if (src) {
-      const wrap = document.getElementById(`img-wrap-${imgId}`);
-      const cap  = document.getElementById(`cap-${imgId}`);
-      const img  = document.getElementById(imgId);
-      if (!wrap || !img) return;
-      img.src = src;
-      img.onload = () => { img.classList.remove('loading'); img.classList.add('loaded'); };
-      wrap.style.display = 'flex';
-      if (cap) {
-        cap.textContent = page.title || query;
-        cap.style.display = 'block';
-      }
-    }
-  } catch(e) { /* silently skip if image fails */ }
+// ─── REVEAL IMAGE (direct Wikipedia Special:FilePath URL) ────────────────────
+function loadRevealImage(src, imgId) {
+  if (!src) return;
+  const wrap = document.getElementById('img-wrap-' + imgId);
+  const img  = document.getElementById(imgId);
+  if (!wrap || !img) return;
+  img.src = src;
+  img.onload  = () => { img.classList.remove('loading'); img.classList.add('loaded'); wrap.style.display = 'flex'; };
+  img.onerror = () => { wrap.style.display = 'none'; }; // silently hide if file not found
 }
 
 // ─── NEXT QUESTION ────────────────────────────────────────────────────────────
