@@ -469,16 +469,17 @@
 
   .reveal-image-wrap {
     width: 100%;
-    max-height: 220px;
-    overflow: hidden;
     border-radius: 8px;
     background: var(--board-light);
     display: flex; align-items: center; justify-content: center;
     margin-top: 4px;
+    padding: 8px;
   }
   .reveal-image-wrap img {
-    width: 100%; height: 220px; object-fit: cover;
-    border-radius: 8px; display: block;
+    max-width: 100%; max-height: 300px;
+    width: auto; height: auto;
+    object-fit: contain;
+    border-radius: 6px; display: block;
     transition: opacity 0.4s;
   }
   .reveal-image-wrap img.loading { opacity: 0; }
